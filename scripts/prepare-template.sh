@@ -1,6 +1,31 @@
 #!/usr/bin/env bash
 set -e
 
+# ========================================================
+#  Proxmox VM Template Preparation Script
+# ========================================================
+#
+# Description:
+# This script prepares a VM to be converted into a Proxmox template.
+# It installs required packages, resets machine identifiers, configures
+# networking, clears logs, and performs security adjustments such as
+# disabling SSH root login and configuring sudo access.
+#
+# Usage:
+#   - Run inside VM as root
+#   - After script finishes, SHUT DOWN the VM and convert it to template:
+#         qm shutdown <VMID>
+#         qm template <VMID>
+#
+# Variables to configure:
+#   - TEMPLATE_USER: Username that should receive passwordless sudo.
+#
+# ========================================================
+
+# -------- CONFIG --------
+TEMPLATE_USER="yourusername" 
+# -------------------------
+
 # Colors (only for labels, main text stays white)
 BLUE="\e[34m"
 GREEN="\e[32m"
@@ -63,8 +88,13 @@ rm -rf /var/tmp/*
 info "Cleaning cloud-init state..."
 cloud-init clean --logs || true
 
-info "Disabling history (optional)..."
-history -c || true
+info "Giving '$TEMPLATE_USER' full sudo privileges (NOPASSWD)..."
+echo "$TEMPLATE_USER ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/90-$TEMPLATE_USER"
+chmod 440 "/etc/sudoers.d/90-$TEMPLATE_USER"
+
+info "Disabling SSH root login..."
+sed -i 's/#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+systemctl restart ssh || true
 
 echo
 echo -e "${GREEN}=================================================${RESET}"
@@ -73,4 +103,3 @@ echo "Now SHUTDOWN VM and convert it to template in Proxmox:"
 echo -e "  ${YELLOW}qm shutdown <VMID>${RESET}"
 echo -e "  ${YELLOW}qm template <VMID>${RESET}"
 echo -e "${GREEN}=================================================${RESET}"
-
