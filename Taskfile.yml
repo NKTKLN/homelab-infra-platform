@@ -1,0 +1,23 @@
+version: '3'
+
+tasks:
+  cz-commit:
+    desc: Create a commit using Commitizen (Conventional Commits standard)
+    cmds:
+      - cz commit
+
+  cz-check:
+    desc: Check if commit messages follow Conventional Commits
+    cmds:
+      - cz check
+
+  cz-bump:
+    desc: Bump version, tag, and update changelog using Commitizen
+    cmds:
+      - cz bump
+
+  release:
+    desc: Bump version and push tags (run after merge to main)
+    cmds:
+      - cz bump
+      - git push --follow-tags
