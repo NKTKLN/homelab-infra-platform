@@ -21,3 +21,47 @@ tasks:
     cmds:
       - cz bump
       - git push --follow-tags
+
+  tf-init:
+    desc: Initialize Terraform in terraform/ directory
+    dir: terraform
+    cmds:
+      - terraform init
+
+  tf-validate:
+    desc: Validate Terraform configuration
+    dir: terraform
+    cmds:
+      - terraform validate
+
+  tf-plan:
+    desc: Show the execution plan
+    dir: terraform
+    cmds:
+      - terraform plan
+
+  tf-apply:
+    desc: Apply infrastructure changes
+    dir: terraform
+    cmds:
+      - terraform apply
+
+  tf-destroy:
+    desc: Destroy all managed infrastructure
+    dir: terraform
+    cmds:
+      - terraform destroy
+
+  tf-fmt:
+    desc: Format Terraform files
+    dir: terraform
+    cmds:
+      - terraform fmt -recursive
+
+  tf-all:
+    desc: Run fmt → init → validate → plan (common workflow)
+    cmds:
+      - task: tf-fmt
+      - task: tf-init
+      - task: tf-validate
+      - task: tf-plan

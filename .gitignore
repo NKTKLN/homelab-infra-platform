@@ -1,0 +1,74 @@
+# ========================
+# Terraform
+# ========================
+# Local state files
+terraform.tfstate
+terraform.tfstate.*
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Plan files
+*.tfplan
+*.plan
+
+# Overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform working directory
+.terraform/
+.terraform.lock.hcl
+
+# Sensitive variable files
+*.tfvars
+*.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# ========================
+# IDEs / Editors
+# ========================
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# ========================
+# Logs & Temporary Files
+# ========================
+*.log
+tmp/
+tmp.*
+
+# ========================
+# Security & Secrets
+# ========================
+*.env
+*.env.*
+*.secret
+*.token
+*.key
+*.pem
+
+# ========================
+# Custom ignore rules
+# ========================
+Todo.md
+
+# ========================
+# Exceptions (keep files)
+# ========================
+!*.example
+!*.example.*
+
+# ========================
+# System files
+# ========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
