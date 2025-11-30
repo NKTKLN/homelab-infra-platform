@@ -1,14 +1,14 @@
 output "name" {
   description = "Name of the created VM"
-  value       = proxmox_vm_qemu.vm.name
+  value       = proxmox_virtual_environment_vm.vm.name
 }
 
-output "vmid" {
+output "id" {
   description = "Proxmox VM ID of the created VM"
-  value       = proxmox_vm_qemu.vm.vmid
+  value       = proxmox_virtual_environment_vm.vm.id
 }
 
-output "ip" {
-  description = "IP address assigned to the VM"
-  value       = var.ipaddr
+output "ipv4" {
+  description = "IPv4 address assigned to the VM"
+  value       = proxmox_virtual_environment_vm.vm.ipv4_addresses
 }

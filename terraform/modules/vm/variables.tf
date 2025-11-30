@@ -1,17 +1,26 @@
+# General VM Parameters
+
 variable "name" {
   description = "Name of the VM"
   type        = string
 }
 
-variable "target_node" {
+variable "hostname" {
+  description = "Hostname for the VM"
+  type        = string
+}
+
+variable "node_name" {
   description = "Proxmox node where the VM will be created"
   type        = string
 }
 
-variable "template" {
-  description = "Name or ID of the template VM to clone from"
-  type        = string
+variable "template_id" {
+  description = "ID of the template VM to clone from"
+  type        = number
 }
+
+# Hardware Configuration
 
 variable "cores" {
   description = "Number of CPU cores"
@@ -24,14 +33,16 @@ variable "memory" {
 }
 
 variable "disk_size" {
-  description = "Disk size (e.g. \"20G\")"
-  type        = string
+  description = "Disk size in GB"
+  type        = number
 }
 
 variable "disk_storage" {
   description = "Proxmox storage pool for the VM disk"
   type        = string
 }
+
+# Network Configuration
 
 variable "network_bridge" {
   description = "Bridge to attach the VM network interface to"
@@ -40,12 +51,12 @@ variable "network_bridge" {
 }
 
 variable "ipaddr" {
-  description = "IP address to assign to the VM (CIDR format, e.g. 192.168.1.10/24)"
+  description = "IP address for the VM in CIDR format (e.g. 192.168.1.10/24)"
   type        = string
 }
 
 variable "gateway" {
-  description = "Default gateway for the VM"
+  description = "Default network gateway for the VM"
   type        = string
 }
 
@@ -55,12 +66,41 @@ variable "nameserver" {
   default     = "8.8.8.8"
 }
 
-variable "ci_user" {
-  description = "cloud-init user name"
+# Cloud-init Configuration
+
+variable "snippets_storage" {
+  description = "Proxmox datastore used for Cloud-Init snippets"
   type        = string
 }
 
-variable "ssh_keys" {
-  description = "SSH public keys injected via cloud-init"
+variable "cloud_init_template" {
+  description = "Path to the Cloud-Init template file"
   type        = string
+}
+
+variable "user" {
+  description = "Default user name for the VM"
+  type        = string
+}
+
+variable "password_hash" {
+  description = "Default user password hash for the VM"
+  type        = string
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key to inject via cloud-init"
+  type        = string
+}
+
+variable "timezone" {
+  description = "Timezone for the VM"
+  type        = string
+  default     = "Europe/Moscow"
+}
+
+variable "locale" {
+  description = "System locale for the VM"
+  type        = string
+  default     = "ru_RU.UTF-8"
 }

@@ -23,38 +23,38 @@ tasks:
       - git push --follow-tags
 
   tf-init:
-    desc: Initialize Terraform in terraform/ directory
-    dir: terraform
+    desc: Initialize Terraform in terraform/envs/prod directory
+    dir: terraform/envs/prod
     cmds:
       - terraform init
 
   tf-validate:
     desc: Validate Terraform configuration
-    dir: terraform
+    dir: terraform/envs/prod
     cmds:
       - terraform validate
 
   tf-plan:
     desc: Show the execution plan
-    dir: terraform
+    dir: terraform/envs/prod
     cmds:
       - terraform plan
 
   tf-apply:
     desc: Apply infrastructure changes
-    dir: terraform
+    dir: terraform/envs/prod
     cmds:
       - terraform apply
 
   tf-destroy:
     desc: Destroy all managed infrastructure
-    dir: terraform
+    dir: terraform/envs/prod
     cmds:
       - terraform destroy
 
   tf-fmt:
     desc: Format Terraform files
-    dir: terraform
+    dir: terraform/envs/prod
     cmds:
       - terraform fmt -recursive
 

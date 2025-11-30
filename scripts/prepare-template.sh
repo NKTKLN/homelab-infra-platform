@@ -17,26 +17,21 @@ set -e
 #         qm shutdown <VMID>
 #         qm template <VMID>
 #
-# Variables to configure:
-#   - TEMPLATE_USER: Username that should receive passwordless sudo.
-#
 # ========================================================
 
-# -------- CONFIG --------
-TEMPLATE_USER="yourusername" 
-# -------------------------
-
-# Colors (only for labels, main text stays white)
+# Colors
 BLUE="\e[34m"
 GREEN="\e[32m"
 YELLOW="\e[33m"
 RED="\e[31m"
+MAGENTA="\e[35m"
 RESET="\e[0m"
 
 info()  { echo -e "${BLUE}[*]${RESET} $*"; }
 ok()    { echo -e "${GREEN}[OK]${RESET} $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${RESET} $*"; }
 err()   { echo -e "${RED}[ERR]${RESET} $*"; }
+ask()   { echo -e "${MAGENTA}[?]${RESET} $*"; }
 
 info "Checking root..."
 if [ "$(id -u)" -ne 0 ]; then
@@ -52,27 +47,15 @@ apt-get install -y qemu-guest-agent cloud-init cloud-initramfs-growroot
 info "Enabling qemu-guest-agent..."
 systemctl enable --now qemu-guest-agent
 
-info "Ensuring netplan uses DHCP on primary interface..."
-NETPLAN_FILE=$(ls /etc/netplan/*.yaml 2>/dev/null | head -n1 || true)
+info "Enabling cloud-init ..."
+systemctl enable --now cloud-init
 
-if [ -z "$NETPLAN_FILE" ]; then
-  warn "Netplan file not found, creating default config..."
-  cat > /etc/netplan/01-netcfg.yaml <<EOF
+cat /etc/cloud/cloud.cfg.d/99-pve-network.cfg <<EOF
 network:
-  version: 2
-  ethernets:
-    ens18:
-      dhcp4: true
+  config: disabled
 EOF
-else
-  if ! grep -q "dhcp4:" "$NETPLAN_FILE"; then
-    warn "# NOTE: configure DHCP manually in $NETPLAN_FILE (no dhcp4 found)."
-  fi
-fi
 
-netplan apply || true
-
-info "Cleaning SSH host keys (regenerated on clone)..."
+info "Cleaning SSH host keys..."
 rm -f /etc/ssh/ssh_host_*
 
 info "Resetting machine-id..."
@@ -88,13 +71,23 @@ rm -rf /var/tmp/*
 info "Cleaning cloud-init state..."
 cloud-init clean --logs || true
 
+ask "Do you want to grant passwordless sudo to a user? (y/n)"
+read -rp "> " GRANT_SUDO
+GRANT_SUDO=${GRANT_SUDO,,}
+
+if [[ "$GRANT_SUDO" == "y" ]]; then
+  ask "Enter the username:"
+  read -rp "> " TEMPLATE_USER
+
+  if [ -z "$TEMPLATE_USER" ]; then
+    err "Username cannot be empty."
+    exit 1
+  fi
+fi
+
 info "Giving '$TEMPLATE_USER' full sudo privileges (NOPASSWD)..."
 echo "$TEMPLATE_USER ALL=(ALL) NOPASSWD: ALL" > "/etc/sudoers.d/90-$TEMPLATE_USER"
 chmod 440 "/etc/sudoers.d/90-$TEMPLATE_USER"
-
-info "Disabling SSH root login..."
-sed -i 's/#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-systemctl restart ssh || true
 
 echo
 echo -e "${GREEN}=================================================${RESET}"

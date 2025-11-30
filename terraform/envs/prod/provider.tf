@@ -1,6 +1,10 @@
 provider "proxmox" {
-  pm_api_url          = var.pm_api_url
-  pm_api_token_id     = var.pm_api_token_id
-  pm_api_token_secret = var.pm_api_token_secret
-  pm_tls_insecure     = true
+  endpoint  = var.pve_api_url
+  api_token = "${var.pve_token_id}=${var.pve_token_secret}"
+  insecure  = var.pve_tls_insecure
+
+  ssh {
+    agent    = true
+    username = var.pve_ssh_username
+  }
 }

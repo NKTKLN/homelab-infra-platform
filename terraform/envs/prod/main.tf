@@ -1,39 +1,32 @@
 module "bastion" {
   source = "../../modules/vm"
 
-  name        = "bastion"
-  target_node = var.target_node
+  # General
+  name      = "bastion"
+  hostname  = "bastion"
+  node_name = var.node_name
 
-  template     = var.template
+  # Template clone
+  template_id = var.template_id
+
+  # CPU / RAM / Disk
   cores        = 2
   memory       = 2048
-  disk_size    = "20G"
+  disk_size    = 20
   disk_storage = var.disk_storage
 
-  ci_user     = var.ci_user
-  ssh_keys    = file(var.ssh_public_keys)
+  # Network
+  ipaddr          = "192.168.10.11/24"
+  gateway         = var.gateway
+  nameserver      = var.nameserver
 
-  ipaddr    = "192.168.10.11/24"
-  gateway   = var.gateway
-  nameserver = var.nameserver
-}
+  # Cloud-init user config
+  user              = var.user
+  password_hash     = var.password_hash
+  ssh_public_key    = var.ssh_public_key
+  timezone          = var.timezone
+  locale            = var.locale
 
-module "vpn" {
-  source = "../../modules/vm"
-
-  name        = "vpn"
-  target_node = var.target_node
-
-  template     = var.template
-  cores        = 1
-  memory       = 1024
-  disk_size    = "16G"
-  disk_storage = var.disk_storage
-
-  ci_user     = var.ci_user
-  ssh_keys    = file(var.ssh_public_keys)
-
-  ipaddr    = "192.168.10.12/24"
-  gateway   = var.gateway
-  nameserver = var.nameserver
+  snippets_storage     = var.snippets_storage
+  cloud_init_template  = "cloud-init-base.yaml.tftpl"
 }

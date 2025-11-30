@@ -1,0 +1,41 @@
+#cloud-config
+
+hostname: ${hostname}
+fqdn: ${hostname}.local
+manage_etc_hosts: true
+
+network:
+  version: 2
+  ethernets:
+    ens18:
+      dhcp4: false
+      addresses:
+        - ${ipaddr}
+      gateway4: ${gateway}
+      nameservers:
+        addresses:
+          - ${nameserver}
+
+users:
+  - name: ${user}
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    passwd: ${password_hash}
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+chpasswd:
+  expire: false
+
+ssh_pwauth: false
+disable_root: true
+ssh_deletekeys: true
+ssh_genkeytypes:
+  - ed25519
+
+package_update: true
+package_upgrade: true
+packages:
+  - qemu-guest-agent
+
+timezone: ${timezone}
+locale: ${locale}
