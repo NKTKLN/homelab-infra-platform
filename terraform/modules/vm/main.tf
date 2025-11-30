@@ -9,6 +9,11 @@ resource "proxmox_virtual_environment_vm" "vm" {
     down_delay = 0
   }
 
+  agent {
+    enabled = true
+    timeout = "5m"
+  }
+
   # Template clone
   clone {
     vm_id        = var.template_id
@@ -24,11 +29,6 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   memory {
     dedicated = var.memory
-  }
-
-  # Guest Agent
-  agent {
-    enabled = true
   }
 
   # Disk
@@ -47,6 +47,52 @@ resource "proxmox_virtual_environment_vm" "vm" {
   # Cloud-init
   initialization {
     user_data_file_id = proxmox_virtual_environment_file.user_cloud_init.id
+
+    ip_config {
+      ipv4 {
+        address = var.ipaddr
+        gateway = var.gateway
+      }
+    }
+
+    dns {
+      servers = var.nameservers
+    }
+  }
+}
+
+resource "proxmox_virtual_environment_firewall_options" "vm_rules" {
+  depends_on = [proxmox_virtual_environment_vm.vm]
+
+  node_name = proxmox_virtual_environment_vm.vm.node_name
+  vm_id     = proxmox_virtual_environment_vm.vm.vm_id
+
+  enabled = var.firewall_enable
+}
+
+resource "proxmox_virtual_environment_firewall_rules" "vm_rule" {
+  depends_on = [proxmox_virtual_environment_vm.vm]
+
+  for_each = {
+    for idx, rule in var.firewall_rules : idx => rule
+  }
+
+  node_name = proxmox_virtual_environment_vm.vm.node_name
+  vm_id     = proxmox_virtual_environment_vm.vm.vm_id
+
+  rule {
+    type    = lookup(each.value, "type", "in")
+    action  = each.value.action
+
+    proto   = lookup(each.value, "proto", null)
+    dport   = lookup(each.value, "dport", null)
+    sport   = lookup(each.value, "sport", null)
+
+    comment = lookup(each.value, "comment", null)
+    source  = lookup(each.value, "source", null)
+    dest    = lookup(each.value, "dest", null)
+    iface   = lookup(each.value, "iface", null)
+    log     = lookup(each.value, "log", null)
   }
 }
 
@@ -58,9 +104,6 @@ resource "proxmox_virtual_environment_file" "user_cloud_init" {
   source_raw {
     data = templatefile("${path.module}/templates/${var.cloud_init_template}", {
       hostname       = var.hostname
-      ipaddr         = var.ipaddr
-      gateway        = var.gateway
-      nameserver     = var.nameserver
       user           = var.user
       password_hash  = var.password_hash
       ssh_public_key = var.ssh_public_key

@@ -51,10 +51,10 @@ variable "gateway" {
   type        = string
 }
 
-variable "nameserver" {
-  description = "DNS nameserver for the VM"
-  type        = string
-  default     = "8.8.8.8"
+variable "nameservers" {
+  description = "DNS nameservers for the VM"
+  type        = list(string)
+  default     = ["8.8.8.8"]
 }
 
 # Cloud-init Settings
@@ -66,11 +66,6 @@ variable "snippets_storage" {
 
 variable "user" {
   description = "Default user name for the VM"
-  type        = string
-}
-
-variable "password_hash" {
-  description = "Default user password for the VM"
   type        = string
 }
 

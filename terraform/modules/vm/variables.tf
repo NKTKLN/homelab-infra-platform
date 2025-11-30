@@ -60,10 +60,10 @@ variable "gateway" {
   type        = string
 }
 
-variable "nameserver" {
-  description = "DNS nameserver for the VM"
-  type        = string
-  default     = "8.8.8.8"
+variable "nameservers" {
+  description = "DNS nameservers for the VM"
+  type        = list(string)
+  default     = ["8.8.8.8"]
 }
 
 # Cloud-init Configuration
@@ -103,4 +103,33 @@ variable "locale" {
   description = "System locale for the VM"
   type        = string
   default     = "ru_RU.UTF-8"
+}
+
+# Firewall
+
+variable "firewall_enable" {
+  description = "Enable or disable the Proxmox firewall for the VM"
+  type        = bool
+  default     = false
+}
+
+variable "firewall_rules" {
+  description = "List of firewall rules to apply to the VM."
+  type = list(object({
+    # REQUIRED
+    action = string
+    type   = string
+
+    # OPTIONAL
+    proto   = optional(string)
+    dport   = optional(string)
+    sport   = optional(string)
+    source  = optional(string)
+    dest    = optional(string)
+    iface   = optional(string)
+    log     = optional(string)
+    comment = optional(string)
+    enabled = optional(bool)
+  }))
+  default = []
 }

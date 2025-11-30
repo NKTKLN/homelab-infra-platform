@@ -1,5 +1,8 @@
 version: '3'
 
+env:
+  TERRAFORM_dir: '{{.TERRAFORM_DIR}}'
+
 tasks:
   cz-commit:
     desc: Create a commit using Commitizen (Conventional Commits standard)
@@ -23,38 +26,38 @@ tasks:
       - git push --follow-tags
 
   tf-init:
-    desc: Initialize Terraform in terraform/envs/prod directory
-    dir: terraform/envs/prod
+    desc: Initialize Terraform in terraform directory
+    dir: '{{.TERRAFORM_DIR}}'
     cmds:
       - terraform init
 
   tf-validate:
     desc: Validate Terraform configuration
-    dir: terraform/envs/prod
+    dir: '{{.TERRAFORM_DIR}}'
     cmds:
       - terraform validate
 
   tf-plan:
     desc: Show the execution plan
-    dir: terraform/envs/prod
+    dir: '{{.TERRAFORM_DIR}}'
     cmds:
       - terraform plan
 
   tf-apply:
     desc: Apply infrastructure changes
-    dir: terraform/envs/prod
+    dir: '{{.TERRAFORM_DIR}}'
     cmds:
       - terraform apply
 
   tf-destroy:
     desc: Destroy all managed infrastructure
-    dir: terraform/envs/prod
+    dir: '{{.TERRAFORM_DIR}}'
     cmds:
       - terraform destroy
 
   tf-fmt:
     desc: Format Terraform files
-    dir: terraform/envs/prod
+    dir: '{{.TERRAFORM_DIR}}'
     cmds:
       - terraform fmt -recursive
 

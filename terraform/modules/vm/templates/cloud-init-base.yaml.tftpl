@@ -4,22 +4,13 @@ hostname: ${hostname}
 fqdn: ${hostname}.local
 manage_etc_hosts: true
 
-network:
-  version: 2
-  ethernets:
-    ens18:
-      dhcp4: false
-      addresses:
-        - ${ipaddr}
-      gateway4: ${gateway}
-      nameservers:
-        addresses:
-          - ${nameserver}
-
 users:
   - name: ${user}
+    groups: sudo
+    shell: /bin/bash
     sudo: ALL=(ALL) NOPASSWD:ALL
     passwd: ${password_hash}
+    lock_passwd: false
     ssh_authorized_keys:
       - ${ssh_public_key}
 
@@ -39,3 +30,6 @@ packages:
 
 timezone: ${timezone}
 locale: ${locale}
+
+runcmd:
+  - [systemctl, enable, --now, qemu-guest-agent.service]
