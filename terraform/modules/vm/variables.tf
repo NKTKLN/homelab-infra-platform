@@ -15,30 +15,45 @@ variable "node_name" {
   type        = string
 }
 
-variable "template_id" {
-  description = "ID of the template VM to clone from"
-  type        = number
-}
-
 # Hardware Configuration
 
 variable "cores" {
   description = "Number of CPU cores"
   type        = number
+
+  validation {
+    condition     = var.cores > 0
+    error_message = "Number of CPU cores must be greater than 0."
+  }
 }
 
 variable "memory" {
   description = "Amount of RAM in MB"
   type        = number
+
+  validation {
+    condition     = var.memory > 0
+    error_message = "Memory must be greater than 0."
+  }
 }
 
 variable "disk_size" {
   description = "Disk size in GB"
   type        = number
+
+  validation {
+    condition     = var.disk_size > 0
+    error_message = "Disk size must be greater than 0."
+  }
 }
 
 variable "disk_storage" {
   description = "Proxmox storage pool for the VM disk"
+  type        = string
+}
+
+variable "disk_image_id" {
+  description = "ID of the disk image"
   type        = string
 }
 
@@ -88,9 +103,11 @@ variable "user" {
   type        = string
 }
 
-variable "password_hash" {
-  description = "Default user password hash for the VM"
+variable "password" {
+  description = "Default user password for the VM. If null, a random password will be generated."
   type        = string
+  default     = null
+  sensitive   = true
 }
 
 variable "ssh_public_key" {
@@ -157,7 +174,10 @@ variable "firewall_rules" {
   validation {
     condition = alltrue([
       for rule in var.firewall_rules :
-      rule.log == null || contains(["emerg", "alert", "crit", "err", "warning", "notice", "info", "debug", "nolog"], rule.type)
+      rule.log == null || contains(
+        ["emerg", "alert", "crit", "err", "warning", "notice", "info", "debug", "nolog"],
+        rule.log
+      )
     ])
     error_message = "Each firewall rule 'log' must be one of: emerg, alert, crit, err, warning, notice, info, debug, nolog, or null."
   }
@@ -173,7 +193,6 @@ variable "virtiofs" {
     path = string
 
     # Optional
-    node    = optional(string)
     comment = optional(string)
   }))
   default = []
@@ -191,7 +210,6 @@ variable "pci_devices" {
     subsystem_id = string
 
     # Optional
-    node             = optional(string)
     comment          = optional(string)
     iommu_group      = optional(number)
     mediated_devices = optional(bool, false)

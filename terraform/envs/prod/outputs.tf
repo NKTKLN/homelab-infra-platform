@@ -1,8 +1,5 @@
 output "vm_passwords" {
-  description = "Default user passwords for the VMs"
-  value = {
-    for name, pw in random_password.vm_passwords :
-    name => pw.result
-  }
-  sensitive = true
+  description = "Default user passwords for VMs"
+  value       = { for name, m in module.vm : name => m.vm_password }
+  sensitive   = true
 }

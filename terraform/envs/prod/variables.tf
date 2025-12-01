@@ -27,32 +27,30 @@ variable "pve_ssh_username" {
   type        = string
 }
 
-# Virtual Machine Template
-
-variable "template_id" {
-  description = "ID of the VM template to clone"
-  type        = number
-}
-
 variable "node_name" {
-  description = "Proxmox node where the VM will be created"
+  description = "Proxmox node where the VMs will be created"
   type        = string
 }
 
 variable "disk_storage" {
-  description = "Proxmox storage pool to use for the VM disk"
+  description = "Proxmox storage pool to use for the VM disks"
+  type        = string
+}
+
+variable "disk_image_storage" {
+  description = "Proxmox storage pool for the VM images"
   type        = string
 }
 
 # Network Configuration
 
 variable "gateway" {
-  description = "Default network gateway for the VM"
+  description = "Default network gateway for the VMs"
   type        = string
 }
 
 variable "nameservers" {
-  description = "DNS nameservers for the VM"
+  description = "DNS nameservers for the VMs"
   type        = list(string)
   default     = ["8.8.8.8"]
 }
@@ -70,23 +68,23 @@ variable "snippets_node_name" {
 }
 
 variable "user" {
-  description = "Default user name for the VM"
+  description = "Default user name for the VMs"
   type        = string
 }
 
 variable "ssh_public_key" {
-  description = "SSH public key to inject into the VM using cloud-init"
+  description = "SSH public key to inject into the VMs using cloud-init"
   type        = string
 }
 
 variable "timezone" {
-  description = "Timezone for the VM"
+  description = "Timezone for the VMs"
   type        = string
   default     = "Europe/Moscow"
 }
 
 variable "locale" {
-  description = "System locale for the VM"
+  description = "System locale for the VMs"
   type        = string
   default     = "ru_RU.UTF-8"
 }
@@ -94,11 +92,11 @@ variable "locale" {
 # VirtioFS Shared Directories
 
 variable "virtiofs" {
-  description = "List of VirtioFS shared directories for the VM"
+  description = "List of VirtioFS shared directories for the storage VM"
   type = list(object({
     # Required
-    name    = string
-    path    = string
+    name = string
+    path = string
 
     # Optional
     node    = optional(string)
@@ -108,8 +106,9 @@ variable "virtiofs" {
 }
 
 # Shared PCI
+
 variable "pci_devices" {
-  description = "List of shared PCI for the VM"
+  description = "List of shared PCI devices for GPU worker VM"
   type = list(object({
     # Required
     name         = string

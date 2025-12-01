@@ -16,13 +16,6 @@ resource "proxmox_virtual_environment_vm" "vm" {
     timeout = "5m"
   }
 
-  # Template clone
-  clone {
-    vm_id        = var.template_id
-    full         = true
-    datastore_id = var.disk_storage 
-  }
-
   # CPU / RAM
   cpu {
     sockets = 1
@@ -36,6 +29,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
   # Disks
   disk {
     datastore_id = var.disk_storage
+    import_from  = var.disk_image_id
     size         = var.disk_size
     interface    = "scsi0"
   }
@@ -44,13 +38,13 @@ resource "proxmox_virtual_environment_vm" "vm" {
     for_each = proxmox_virtual_environment_hardware_mapping_dir.shared_dir
 
     content {
-      mapping   = virtiofs.value.name
+      mapping   = virtiofs.key
       cache     = "always"
       direct_io = true
     }
   }
 
-  # PCI
+  # PCI passthrough
   dynamic "hostpci" {
     for_each = proxmox_virtual_environment_hardware_mapping_pci.shared_pci
 
@@ -93,7 +87,7 @@ resource "proxmox_virtual_environment_file" "vm_cloud_init" {
     data = templatefile("${path.module}/templates/${var.cloud_init_template}", {
       hostname       = var.hostname
       user           = var.user
-      password_hash  = var.password_hash
+      password_hash  = bcrypt(local.vm_password)
       ssh_public_key = var.ssh_public_key
       timezone       = var.timezone
       locale         = var.locale
@@ -103,15 +97,25 @@ resource "proxmox_virtual_environment_file" "vm_cloud_init" {
   }
 }
 
+resource "random_password" "vm_password" {
+  count   = var.password == null ? 1 : 0
+  length  = 16
+  special = true
+}
+
+locals {
+  vm_password = var.password != null ? var.password : random_password.vm_password[0].result
+}
+
 resource "proxmox_virtual_environment_hardware_mapping_dir" "shared_dir" {
   for_each = { for v in var.virtiofs : v.name => v }
 
-  name = each.value.name
+  name = each.key
 
   map = [{
-    comment = each.value.comment
-    node    = coalesce(each.value.node, var.node_name)
+    node    = var.node_name
     path    = each.value.path
+    comment = try(each.value.comment, null)
   }]
 }
 
@@ -121,20 +125,18 @@ resource "proxmox_virtual_environment_hardware_mapping_pci" "shared_pci" {
   name = each.value.name
 
   map = [{
-    comment      = each.value.comment
-    node         = coalesce(each.value.node, var.node_name)
+    node         = var.node_name
     path         = each.value.path
     id           = each.value.id
-    iommu_group  = each.value.iommu_group
     subsystem_id = each.value.subsystem_id
+    iommu_group  = try(each.value.iommu_group, null)
+    comment      = try(each.value.comment, null)
   }]
 
-  mediated_devices = each.value.mediated_devices
+  mediated_devices = try(each.value.mediated_devices, false)
 }
 
 resource "proxmox_virtual_environment_firewall_options" "vm_rules" {
-  depends_on = [proxmox_virtual_environment_vm.vm]
-
   node_name = proxmox_virtual_environment_vm.vm.node_name
   vm_id     = proxmox_virtual_environment_vm.vm.vm_id
 
@@ -142,8 +144,6 @@ resource "proxmox_virtual_environment_firewall_options" "vm_rules" {
 }
 
 resource "proxmox_virtual_environment_firewall_rules" "vm_rules" {
-  depends_on = [proxmox_virtual_environment_vm.vm]
-
   node_name = proxmox_virtual_environment_vm.vm.node_name
   vm_id     = proxmox_virtual_environment_vm.vm.vm_id
 
@@ -151,17 +151,17 @@ resource "proxmox_virtual_environment_firewall_rules" "vm_rules" {
     for_each = var.firewall_rules
 
     content {
-      type    = rule.value.type
       action  = rule.value.action
+      type    = rule.value.type
       proto   = rule.value.proto
       dport   = rule.value.dport
       sport   = rule.value.sport
-      comment = rule.value.comment
       source  = rule.value.source
       dest    = rule.value.dest
       iface   = rule.value.iface
-      enabled = lookup(rule.value, "enabled", true)
-      log     = lookup(rule.value, "log", false)
+      comment = rule.value.comment
+      enabled = rule.value.enabled
+      log     = rule.value.log
     }
   }
 }

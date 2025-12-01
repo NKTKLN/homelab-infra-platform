@@ -1,135 +1,136 @@
-module "vm-sandbox" {
-  source = "../../modules/vm"
+module "ubuntu_image" {
+  source             = "../../modules/image"
 
-  # General
-  name      = "vm-sandbox"
-  hostname  = "vm-sandbox"
-  node_name = var.node_name
+  disk_image_storage = var.disk_image_storage
+  node_name          = var.node_name
 
-  # Template clone
-  template_id = var.template_id
-
-  # CPU / RAM / Disk / PCI
-  cores        = 2
-  memory       = 2048
-  disk_size    = 20
-  disk_storage = var.disk_storage
-  virtiofs     = []
-  pci_devices  = []
-
-  # Network
-  ipaddr      = "192.168.1.12/24"
-  gateway     = var.gateway
-  nameservers = var.nameservers
-
-  # Cloud-init user config
-  user           = var.user
-  password_hash  = bcrypt(random_password.vm_passwords["vm-sandbox"].result)
-  ssh_public_key = file(var.ssh_public_key)
-  timezone       = var.timezone
-  locale         = var.locale
-
-  snippets_storage    = var.snippets_storage
-  snippets_node_name  = var.snippets_node_name
-  cloud_init_template = "cloud-init-base.yaml.tftpl"
-
-  # Firewall
-  firewall_enable = false
+  image_url          = "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
+  image_file_name    = "ubuntu-24.04-server-cloudimg-amd64.qcow2"
+  content_type       = "import"
 }
 
-module "vm-ops-node" {
-  source = "../../modules/vm"
-
-  # General
-  name      = "vm-ops-node"
-  hostname  = "vm-ops-node"
-  node_name = var.node_name
-
-  # Template clone
-  template_id = var.template_id
-
-  # CPU / RAM / Disk / PCI
-  cores        = 2
-  memory       = 3072
-  disk_size    = 20
-  disk_storage = var.disk_storage
-  virtiofs     = []
-  pci_devices  = []
-
-  # Network
-  ipaddr      = "192.168.1.13/24"
-  gateway     = var.gateway
-  nameservers = var.nameservers
-
-  # Cloud-init user config
-  user           = var.user
-  password_hash  = bcrypt(random_password.vm_passwords["vm-ops-node"].result)
-  ssh_public_key = file(var.ssh_public_key)
-  timezone       = var.timezone
-  locale         = var.locale
-
-  snippets_storage    = var.snippets_storage
-  snippets_node_name  = var.snippets_node_name
-  cloud_init_template = "cloud-init-base.yaml.tftpl"
-
-  # Firewall
-  firewall_enable = true
-
-  firewall_rules = [
-    # Allow SSH
-    {
-      action  = "ACCEPT"
-      type    = "in"
-      proto   = "tcp"
-      dport   = "22"
-      comment = "Allow SSH"
-    },
-
-    # Allow Node Exporter
-    {
-      action  = "ACCEPT"
-      type    = "in"
-      proto   = "tcp"
-      dport   = "9100"
-      comment = "Allow Node Exporter"
-    },
-
-    # Drop everything else
-    {
-      action  = "DROP"
-      type    = "in"
-      comment = "Drop all other incoming traffic"
+locals {
+  vm_definitions = {
+    "vm-sandbox" = {
+      hostname        = "vm-sandbox"
+      cores           = 2
+      memory          = 2048
+      disk_size       = 20
+      ipaddr          = "192.168.1.12/24"
+      virtiofs        = []
+      pci_devices     = []
+      firewall_enable = false
+      firewall_rules  = []
     }
-  ]
+
+    "vm-ops-node" = {
+      hostname        = "vm-ops-node"
+      cores           = 2
+      memory          = 3072
+      disk_size       = 20
+      ipaddr          = "192.168.1.13/24"
+      virtiofs        = []
+      pci_devices     = []
+      firewall_enable = true
+      firewall_rules = [
+        {
+          action  = "ACCEPT"
+          type    = "in"
+          proto   = "tcp"
+          dport   = "22"
+          comment = "Allow SSH"
+        },
+        {
+          action  = "ACCEPT"
+          type    = "in"
+          proto   = "tcp"
+          dport   = "9100"
+          comment = "Allow Node Exporter"
+        },
+        {
+          action  = "DROP"
+          type    = "in"
+          comment = "Drop all other incoming traffic"
+        }
+      ]
+    }
+
+    "vm-storage-node" = {
+      hostname        = "vm-storage-node"
+      cores           = 2
+      memory          = 4096
+      disk_size       = 32
+      ipaddr          = "192.168.1.14/24"
+      virtiofs        = var.virtiofs
+      pci_devices     = []
+      firewall_enable = false
+      firewall_rules  = []
+    }
+
+    "vm-k8s-master-1" = {
+      hostname        = "vm-k8s-master-1"
+      cores           = 4
+      memory          = 6144
+      disk_size       = 40
+      ipaddr          = "192.168.1.15/24"
+      virtiofs        = []
+      pci_devices     = []
+      firewall_enable = false
+      firewall_rules  = []
+    }
+
+    "vm-k8s-worker-1" = {
+      hostname        = "vm-k8s-worker-1"
+      cores           = 4
+      memory          = 6144
+      disk_size       = 40
+      ipaddr          = "192.168.1.16/24"
+      virtiofs        = []
+      pci_devices     = []
+      firewall_enable = false
+      firewall_rules  = []
+    }
+
+    "vm-k8s-gpu-worker-1" = {
+      hostname        = "vm-k8s-gpu-worker-1"
+      cores           = 4
+      memory          = 8192
+      disk_size       = 60
+      ipaddr          = "192.168.1.17/24"
+      virtiofs        = []
+      pci_devices     = var.pci_devices
+      firewall_enable = false
+      firewall_rules  = []
+    }
+  }
 }
 
-module "vm-storage-node" {
-  source = "../../modules/vm"
+
+module "vm" {
+  source   = "../../modules/vm"
+  for_each = local.vm_definitions
 
   # General
-  name      = "vm-storage-node"
-  hostname  = "vm-storage-node"
+  name      = each.key
+  hostname  = each.value.hostname
   node_name = var.node_name
-
-  # Template clone
-  template_id = var.template_id
 
   # CPU / RAM / Disk / PCI
-  cores        = 2
-  memory       = 4096
-  disk_size    = 32
-  disk_storage = var.disk_storage
-  virtiofs     = var.virtiofs
-  pci_devices  = []
-  
+  cores         = each.value.cores
+  memory        = each.value.memory
+  disk_size     = each.value.disk_size
+  disk_storage  = var.disk_storage
+  disk_image_id = module.ubuntu_image.image_id
+  virtiofs      = each.value.virtiofs
+  pci_devices   = each.value.pci_devices
+
   # Network
-  ipaddr      = "192.168.1.14/24"
+  ipaddr      = each.value.ipaddr
   gateway     = var.gateway
   nameservers = var.nameservers
 
   # Cloud-init user config
   user           = var.user
-  password_hash  = bcrypt(random_password.vm_passwords["vm-storage-node"].result)
   ssh_public_key = file(var.ssh_public_key)
   timezone       = var.timezone
   locale         = var.locale
@@ -139,122 +140,6 @@ module "vm-storage-node" {
   cloud_init_template = "cloud-init-base.yaml.tftpl"
 
   # Firewall
-  firewall_enable = false
-}
-
-module "vm-k8s-master-1" {
-  source = "../../modules/vm"
-
-  # General
-  name      = "vm-k8s-master-1"
-  hostname  = "vm-k8s-master-1"
-  node_name = var.node_name
-
-  # Template clone
-  template_id = var.template_id
-
-  # CPU / RAM / Disk / PCI
-  cores        = 4
-  memory       = 6144
-  disk_size    = 40
-  disk_storage = var.disk_storage
-  virtiofs     = []
-  pci_devices  = []
-
-  # Network
-  ipaddr      = "192.168.1.15/24"
-  gateway     = var.gateway
-  nameservers = var.nameservers
-
-  # Cloud-init user config
-  user           = var.user
-  password_hash  = bcrypt(random_password.vm_passwords["vm-k8s-master-1"].result)
-  ssh_public_key = file(var.ssh_public_key)
-  timezone       = var.timezone
-  locale         = var.locale
-
-  snippets_storage    = var.snippets_storage
-  snippets_node_name  = var.snippets_node_name
-  cloud_init_template = "cloud-init-base.yaml.tftpl"
-
-  # Firewall
-  firewall_enable = false
-}
-
-module "vm-k8s-worker-1" {
-  source = "../../modules/vm"
-
-  # General
-  name      = "vm-k8s-worker-1"
-  hostname  = "vm-k8s-worker-1"
-  node_name = var.node_name
-
-  # Template clone
-  template_id = var.template_id
-
-  # CPU / RAM / Disk / PCI
-  cores        = 4
-  memory       = 6144
-  disk_size    = 40
-  disk_storage = var.disk_storage
-  virtiofs     = []
-  pci_devices  = []
-
-  # Network
-  ipaddr      = "192.168.1.16/24"
-  gateway     = var.gateway
-  nameservers = var.nameservers
-
-  # Cloud-init user config
-  user           = var.user
-  password_hash  = bcrypt(random_password.vm_passwords["vm-k8s-worker-1"].result)
-  ssh_public_key = file(var.ssh_public_key)
-  timezone       = var.timezone
-  locale         = var.locale
-
-  snippets_storage    = var.snippets_storage
-  snippets_node_name  = var.snippets_node_name
-  cloud_init_template = "cloud-init-base.yaml.tftpl"
-
-  # Firewall
-  firewall_enable = false
-}
-
-module "vm-k8s-gpu-worker-1" {
-  source = "../../modules/vm"
-
-  # General
-  name      = "vm-k8s-gpu-worker-1"
-  hostname  = "vm-k8s-gpu-worker-1"
-  node_name = var.node_name
-
-  # Template clone
-  template_id = var.template_id
-
-  # CPU / RAM / Disk / GPU / PCI
-  cores        = 4
-  memory       = 8192
-  disk_size    = 60
-  disk_storage = var.disk_storage
-  virtiofs     = []
-  pci_devices  = var.pci_devices
-
-  # Network
-  ipaddr      = "192.168.1.17/24"
-  gateway     = var.gateway
-  nameservers = var.nameservers
-
-  # Cloud-init user config
-  user           = var.user
-  password_hash  = bcrypt(random_password.vm_passwords["vm-k8s-gpu-worker-1"].result)
-  ssh_public_key = file(var.ssh_public_key)
-  timezone       = var.timezone
-  locale         = var.locale
-
-  snippets_storage    = var.snippets_storage
-  snippets_node_name  = var.snippets_node_name
-  cloud_init_template = "cloud-init-base.yaml.tftpl"
-
-  # Firewall
-  firewall_enable = false
+  firewall_enable = each.value.firewall_enable
+  firewall_rules  = each.value.firewall_rules
 }
