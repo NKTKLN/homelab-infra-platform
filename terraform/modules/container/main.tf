@@ -1,6 +1,6 @@
 resource "proxmox_virtual_environment_container" "container" {
   # General
-  node_name = var.node_name
+  node_name    = var.node_name
   unprivileged = true
 
   startup {
@@ -51,7 +51,7 @@ resource "proxmox_virtual_environment_container" "container" {
     }
 
     user_account {
-      keys = [var.ssh_public_key]
+      keys     = [var.ssh_public_key]
       password = local.container_password
     }
   }
@@ -68,15 +68,15 @@ locals {
 }
 
 resource "proxmox_virtual_environment_firewall_options" "container_rules" {
-  node_name = proxmox_virtual_environment_container.container.node_name
+  node_name    = proxmox_virtual_environment_container.container.node_name
   container_id = proxmox_virtual_environment_container.container.id
 
   enabled = var.firewall_enable
 }
 
 resource "proxmox_virtual_environment_firewall_rules" "container_rules" {
-  node_name = proxmox_virtual_environment_container.container.node_name
-  container_id     = proxmox_virtual_environment_container.container.id
+  node_name    = proxmox_virtual_environment_container.container.node_name
+  container_id = proxmox_virtual_environment_container.container.id
 
   dynamic "rule" {
     for_each = var.firewall_rules

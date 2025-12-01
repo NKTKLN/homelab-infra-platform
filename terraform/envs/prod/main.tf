@@ -1,23 +1,23 @@
 module "ubuntu_image" {
-  source             = "../../modules/image"
+  source = "../../modules/image"
 
   disk_image_storage = var.disk_image_storage
   node_name          = var.node_name
 
-  image_url          = "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
-  image_file_name    = "ubuntu-24.04-server-cloudimg-amd64.qcow2"
-  content_type       = "import"
+  image_url       = "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
+  image_file_name = "ubuntu-24.04-server-cloudimg-amd64.qcow2"
+  content_type    = "import"
 }
 
 module "ubuntu_lxc_image" {
-  source             = "../../modules/image"
+  source = "../../modules/image"
 
   disk_image_storage = var.disk_image_storage
   node_name          = var.node_name
 
-  image_url        = "http://download.proxmox.com/images/system/ubuntu-24.04-standard_24.04-2_amd64.tar.zst"
-  image_file_name  = "ubuntu-24.04-lxc.tar.zst"
-  content_type     = "vztmpl" 
+  image_url       = "http://download.proxmox.com/images/system/ubuntu-24.04-standard_24.04-2_amd64.tar.zst"
+  image_file_name = "ubuntu-24.04-lxc.tar.zst"
+  content_type    = "vztmpl"
 }
 
 locals {
@@ -199,7 +199,7 @@ module "container" {
   memory        = each.value.memory
   disk_size     = each.value.disk_size
   disk_storage  = var.disk_storage
-  disk_image_id  = module.ubuntu_lxc_image.image_id
+  disk_image_id = module.ubuntu_lxc_image.image_id
 
   # Network
   ipaddr      = each.value.ipaddr

@@ -2,9 +2,9 @@ resource "proxmox_virtual_environment_vm" "vm" {
   # General
   name      = var.name
   node_name = var.node_name
-  
+
   machine = "q35,viommu=virtio"
-  
+
   startup {
     order      = 1
     up_delay   = 0

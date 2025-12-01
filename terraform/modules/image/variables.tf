@@ -25,7 +25,7 @@ variable "content_type" {
   type        = string
 
   validation {
-    condition = contains(["import", "iso", "vztmpl"], var.content_type)
+    condition     = contains(["import", "iso", "vztmpl"], var.content_type)
     error_message = "content_type must be one of: import, iso, vztmpl."
   }
 }

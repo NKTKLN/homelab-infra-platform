@@ -1,7 +1,7 @@
 version: '3'
 
 env:
-  TERRAFORM_dir: '{{.TERRAFORM_DIR}}'
+  TERRAFORM_DIR: 'terraform/envs/prod'
 
 tasks:
   cz-commit:
