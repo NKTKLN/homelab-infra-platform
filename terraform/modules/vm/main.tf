@@ -39,9 +39,10 @@ resource "proxmox_virtual_environment_vm" "vm" {
   }
 
   dynamic "virtiofs" {
-    for_each = var.enable_virtiofs ? [1] : []
+    for_each = proxmox_virtual_environment_hardware_mapping_dir.shared_dir
+
     content {
-      mapping   = proxmox_virtual_environment_hardware_mapping_dir.shared_dir[0].name
+      mapping   = each.value.name
       cache     = "always"
       direct_io = true
     }
@@ -55,7 +56,7 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   # Cloud-init
   initialization {
-    user_data_file_id = proxmox_virtual_environment_file.user_cloud_init.id
+    user_data_file_id = proxmox_virtual_environment_file.vm_cloud_init.id
 
     ip_config {
       ipv4 {
@@ -70,17 +71,35 @@ resource "proxmox_virtual_environment_vm" "vm" {
   }
 }
 
+resource "proxmox_virtual_environment_file" "vm_cloud_init" {
+  content_type = "snippets"
+  datastore_id = var.snippets_storage
+  node_name    = var.snippets_node_name
+
+  source_raw {
+    data = templatefile("${path.module}/templates/${var.cloud_init_template}", {
+      hostname       = var.hostname
+      user           = var.user
+      password_hash  = var.password_hash
+      ssh_public_key = var.ssh_public_key
+      timezone       = var.timezone
+      locale         = var.locale
+    })
+
+    file_name = "${var.name}-user-data.yaml"
+  }
+}
+
 resource "proxmox_virtual_environment_hardware_mapping_dir" "shared_dir" {
-  count = var.enable_virtiofs ? 1 : 0
+  for_each = { for v in var.virtiofs : v.name => v }
 
-  name = var.virtiofs_name
+  name = each.value.name
 
-  map = [
-    {
-      node = var.virtiofs_node
-      path = var.virtiofs_path
-    },
-  ]
+  map = [{
+    comment = each.value.comment
+    node    = coalesce(each.value.node, var.node_name)
+    path    = each.value.path
+  }]
 }
 
 resource "proxmox_virtual_environment_firewall_options" "vm_rules" {
@@ -95,45 +114,24 @@ resource "proxmox_virtual_environment_firewall_options" "vm_rules" {
 resource "proxmox_virtual_environment_firewall_rules" "vm_rule" {
   depends_on = [proxmox_virtual_environment_vm.vm]
 
-  for_each = {
-    for idx, rule in var.firewall_rules : 
-    idx => rule
-  }
+  for_each = { for idx, rule in var.firewall_rules : idx => rule }
 
   node_name = proxmox_virtual_environment_vm.vm.node_name
   vm_id     = proxmox_virtual_environment_vm.vm.vm_id
 
   rule {
-    type    = lookup(each.value, "type", "in")
+    type    = each.value
     action  = each.value.action
 
-    proto   = lookup(each.value, "proto", null)
-    dport   = lookup(each.value, "dport", null)
-    sport   = lookup(each.value, "sport", null)
+    proto   = each.value.proto
+    dport   = each.value.dport
+    sport   = each.value.sport
 
-    comment = lookup(each.value, "comment", null)
-    source  = lookup(each.value, "source", null)
-    dest    = lookup(each.value, "dest", null)
-    iface   = lookup(each.value, "iface", null)
-    log     = lookup(each.value, "log", null)
-  }
-}
-
-resource "proxmox_virtual_environment_file" "user_cloud_init" {
-  content_type = "snippets"
-  datastore_id = var.snippets_storage
-  node_name    = var.node_name
-
-  source_raw {
-    data = templatefile("${path.module}/templates/${var.cloud_init_template}", {
-      hostname       = var.hostname
-      user           = var.user
-      password_hash  = var.password_hash
-      ssh_public_key = var.ssh_public_key
-      timezone       = var.timezone
-      locale         = var.locale
-    })
-
-    file_name = "${var.name}-user-data.yaml"
+    comment = each.value.comment
+    source  = each.value.source
+    dest    = each.value.dest
+    iface   = each.value.iface
+    enabled = each.value.enabled
+    log     = each.value.log
   }
 }

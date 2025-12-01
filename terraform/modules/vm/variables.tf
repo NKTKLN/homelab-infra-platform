@@ -73,6 +73,11 @@ variable "snippets_storage" {
   type        = string
 }
 
+variable "snippets_node_name" {
+  description = "Proxmox node where the snippets datastore exists"
+  type        = string
+}
+
 variable "cloud_init_template" {
   description = "Path to the Cloud-Init template file"
   type        = string
@@ -114,13 +119,13 @@ variable "firewall_enable" {
 }
 
 variable "firewall_rules" {
-  description = "List of firewall rules to apply to the VM."
+  description = "List of firewall rules to apply to the VM"
   type = list(object({
-    # REQUIRED
-    action = string
-    type   = string
+    # Required
+    action  = string
 
-    # OPTIONAL
+    # Optional
+    type    = optional(string, "in")
     proto   = optional(string)
     dport   = optional(string)
     sport   = optional(string)
@@ -129,32 +134,47 @@ variable "firewall_rules" {
     iface   = optional(string)
     log     = optional(string)
     comment = optional(string)
-    enabled = optional(bool)
+    enabled = optional(bool, true)
   }))
   default = []
+
+  validation {
+    condition = alltrue([
+      for rule in var.firewall_rules :
+      contains(["ACCEPT", "DROP", "REJECT"], rule.action)
+    ])
+    error_message = "Each firewall rule 'action' must be one of: ACCEPT, DROP, REJECT."
+  }
+
+  validation {
+    condition = alltrue([
+      for rule in var.firewall_rules :
+      rule.type == null || contains(["in", "out"], rule.type)
+    ])
+    error_message = "Each firewall rule 'type' must be one of: in, out, or null."
+  }
+
+  validation {
+    condition = alltrue([
+      for rule in var.firewall_rules :
+      rule.log == null || contains(["emerg", "alert", "crit", "err", "warning", "notice", "info", "debug", "nolog"], rule.type)
+    ])
+    error_message = "Each firewall rule 'log' must be one of: emerg, alert, crit, err, warning, notice, info, debug, nolog, or null."
+  }
 }
 
 # VirtioFS Shared Directory
 
-variable "enable_virtiofs" {
-  description = "Enable or disable VirtioFS shared directory for the VM"
-  type        = bool
-  default     = false
-}
+variable "virtiofs" {
+  description = "List of VirtioFS shared directories for the VM"
+  type = list(object({
+    # Required
+    name    = string
+    path    = string
 
-variable "virtiofs_name" {
-  description = "Name of the VirtioFS hardware mapping directory"
-  type        = string
-  default     = "storage-node-hard-drive"
-}
-
-variable "virtiofs_node" {
-  description = "Proxmox node where the VirtioFS directory exists"
-  type        = string
-  default     = "pve"
-}
-
-variable "virtiofs_path" {
-  description = "Filesystem path to the shared directory for VirtioFS"
-  type        = string
+    # Optional
+    node    = optional(string)
+    comment = optional(string)
+  }))
+  default = []
 }
