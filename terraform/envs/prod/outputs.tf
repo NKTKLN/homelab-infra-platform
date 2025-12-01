@@ -1,5 +1,8 @@
-output "vm_password" {
-  description = "Default user password for the VM"
-  value     = random_password.vm_password.result
+output "vm_passwords" {
+  description = "Default user passwords for the VMs"
+  value = {
+    for name, pw in random_password.vm_passwords :
+    name => pw.result
+  }
   sensitive = true
 }

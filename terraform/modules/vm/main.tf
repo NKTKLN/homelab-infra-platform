@@ -31,11 +31,20 @@ resource "proxmox_virtual_environment_vm" "vm" {
     dedicated = var.memory
   }
 
-  # Disk
+  # Disks
   disk {
     datastore_id = var.disk_storage
     size         = var.disk_size
     interface    = "scsi0"
+  }
+
+  dynamic "virtiofs" {
+    for_each = var.enable_virtiofs ? [1] : []
+    content {
+      mapping   = proxmox_virtual_environment_hardware_mapping_dir.shared_dir[0].name
+      cache     = "always"
+      direct_io = true
+    }
   }
 
   # Network
@@ -61,6 +70,19 @@ resource "proxmox_virtual_environment_vm" "vm" {
   }
 }
 
+resource "proxmox_virtual_environment_hardware_mapping_dir" "shared_dir" {
+  count = var.enable_virtiofs ? 1 : 0
+
+  name = var.virtiofs_name
+
+  map = [
+    {
+      node = var.virtiofs_node
+      path = var.virtiofs_path
+    },
+  ]
+}
+
 resource "proxmox_virtual_environment_firewall_options" "vm_rules" {
   depends_on = [proxmox_virtual_environment_vm.vm]
 
@@ -74,7 +96,8 @@ resource "proxmox_virtual_environment_firewall_rules" "vm_rule" {
   depends_on = [proxmox_virtual_environment_vm.vm]
 
   for_each = {
-    for idx, rule in var.firewall_rules : idx => rule
+    for idx, rule in var.firewall_rules : 
+    idx => rule
   }
 
   node_name = proxmox_virtual_environment_vm.vm.node_name

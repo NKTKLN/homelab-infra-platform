@@ -85,3 +85,22 @@ variable "locale" {
   type        = string
   default     = "ru_RU.UTF-8"
 }
+
+# VirtioFS Shared Directory
+
+variable "virtiofs_name" {
+  description = "Name of the VirtioFS hardware mapping directory"
+  type        = string
+  default     = "storage-node-hard-drive"
+}
+
+variable "virtiofs_node" {
+  description = "Proxmox node where the VirtioFS directory exists"
+  type        = string
+  default     = "pve"
+}
+
+variable "virtiofs_path" {
+  description = "Filesystem path to the shared directory for VirtioFS"
+  type        = string
+}

@@ -133,3 +133,28 @@ variable "firewall_rules" {
   }))
   default = []
 }
+
+# VirtioFS Shared Directory
+
+variable "enable_virtiofs" {
+  description = "Enable or disable VirtioFS shared directory for the VM"
+  type        = bool
+  default     = false
+}
+
+variable "virtiofs_name" {
+  description = "Name of the VirtioFS hardware mapping directory"
+  type        = string
+  default     = "storage-node-hard-drive"
+}
+
+variable "virtiofs_node" {
+  description = "Proxmox node where the VirtioFS directory exists"
+  type        = string
+  default     = "pve"
+}
+
+variable "virtiofs_path" {
+  description = "Filesystem path to the shared directory for VirtioFS"
+  type        = string
+}
