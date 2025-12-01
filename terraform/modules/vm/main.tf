@@ -3,6 +3,8 @@ resource "proxmox_virtual_environment_vm" "vm" {
   name      = var.name
   node_name = var.node_name
   
+  machine = "q35,viommu=virtio"
+  
   startup {
     order      = 1
     up_delay   = 0
@@ -42,9 +44,20 @@ resource "proxmox_virtual_environment_vm" "vm" {
     for_each = proxmox_virtual_environment_hardware_mapping_dir.shared_dir
 
     content {
-      mapping   = each.value.name
+      mapping   = virtiofs.value.name
       cache     = "always"
       direct_io = true
+    }
+  }
+
+  # PCI
+  dynamic "hostpci" {
+    for_each = proxmox_virtual_environment_hardware_mapping_pci.shared_pci
+
+    content {
+      device  = "hostpci${hostpci.key}"
+      mapping = hostpci.value.name
+      pcie    = true
     }
   }
 
@@ -102,6 +115,23 @@ resource "proxmox_virtual_environment_hardware_mapping_dir" "shared_dir" {
   }]
 }
 
+resource "proxmox_virtual_environment_hardware_mapping_pci" "shared_pci" {
+  for_each = { for idx, v in var.pci_devices : idx => v }
+
+  name = each.value.name
+
+  map = [{
+    comment      = each.value.comment
+    node         = coalesce(each.value.node, var.node_name)
+    path         = each.value.path
+    id           = each.value.id
+    iommu_group  = each.value.iommu_group
+    subsystem_id = each.value.subsystem_id
+  }]
+
+  mediated_devices = each.value.mediated_devices
+}
+
 resource "proxmox_virtual_environment_firewall_options" "vm_rules" {
   depends_on = [proxmox_virtual_environment_vm.vm]
 
@@ -111,27 +141,27 @@ resource "proxmox_virtual_environment_firewall_options" "vm_rules" {
   enabled = var.firewall_enable
 }
 
-resource "proxmox_virtual_environment_firewall_rules" "vm_rule" {
+resource "proxmox_virtual_environment_firewall_rules" "vm_rules" {
   depends_on = [proxmox_virtual_environment_vm.vm]
-
-  for_each = { for idx, rule in var.firewall_rules : idx => rule }
 
   node_name = proxmox_virtual_environment_vm.vm.node_name
   vm_id     = proxmox_virtual_environment_vm.vm.vm_id
 
-  rule {
-    type    = each.value
-    action  = each.value.action
+  dynamic "rule" {
+    for_each = var.firewall_rules
 
-    proto   = each.value.proto
-    dport   = each.value.dport
-    sport   = each.value.sport
-
-    comment = each.value.comment
-    source  = each.value.source
-    dest    = each.value.dest
-    iface   = each.value.iface
-    enabled = each.value.enabled
-    log     = each.value.log
+    content {
+      type    = rule.value.type
+      action  = rule.value.action
+      proto   = rule.value.proto
+      dport   = rule.value.dport
+      sport   = rule.value.sport
+      comment = rule.value.comment
+      source  = rule.value.source
+      dest    = rule.value.dest
+      iface   = rule.value.iface
+      enabled = lookup(rule.value, "enabled", true)
+      log     = lookup(rule.value, "log", false)
+    }
   }
 }

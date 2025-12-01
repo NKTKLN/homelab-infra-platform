@@ -106,3 +106,22 @@ variable "virtiofs" {
   }))
   default = []
 }
+
+# Shared PCI
+variable "pci_devices" {
+  description = "List of shared PCI for the VM"
+  type = list(object({
+    # Required
+    name         = string
+    path         = string
+    id           = string
+    subsystem_id = string
+
+    # Optional
+    node             = optional(string)
+    comment          = optional(string)
+    iommu_group      = optional(number)
+    mediated_devices = optional(bool, false)
+  }))
+  default = []
+}

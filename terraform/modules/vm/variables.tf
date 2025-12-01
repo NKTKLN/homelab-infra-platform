@@ -122,7 +122,7 @@ variable "firewall_rules" {
   description = "List of firewall rules to apply to the VM"
   type = list(object({
     # Required
-    action  = string
+    action = string
 
     # Optional
     type    = optional(string, "in")
@@ -169,12 +169,32 @@ variable "virtiofs" {
   description = "List of VirtioFS shared directories for the VM"
   type = list(object({
     # Required
-    name    = string
-    path    = string
+    name = string
+    path = string
 
     # Optional
     node    = optional(string)
     comment = optional(string)
+  }))
+  default = []
+}
+
+# Shared PCI
+
+variable "pci_devices" {
+  description = "List of shared PCI for the VM"
+  type = list(object({
+    # Required
+    name         = string
+    path         = string
+    id           = string
+    subsystem_id = string
+
+    # Optional
+    node             = optional(string)
+    comment          = optional(string)
+    iommu_group      = optional(number)
+    mediated_devices = optional(bool, false)
   }))
   default = []
 }
