@@ -9,6 +9,17 @@ module "ubuntu_image" {
   content_type       = "import"
 }
 
+module "ubuntu_lxc_image" {
+  source             = "../../modules/image"
+
+  disk_image_storage = var.disk_image_storage
+  node_name          = var.node_name
+
+  image_url        = "http://download.proxmox.com/images/system/ubuntu-24.04-standard_24.04-2_amd64.tar.zst"
+  image_file_name  = "ubuntu-24.04-lxc.tar.zst"
+  content_type     = "vztmpl" 
+}
+
 locals {
   vm_definitions = {
     "vm-sandbox" = {
@@ -103,8 +114,39 @@ locals {
       firewall_rules  = []
     }
   }
-}
 
+  container_definitions = {
+    "ct-vpn" = {
+      hostname        = "ct-vpn"
+      cores           = 1
+      memory          = 1024
+      disk_size       = 10
+      ipaddr          = "192.168.1.11/24"
+      firewall_enable = true
+      firewall_rules = [
+        {
+          action  = "ACCEPT"
+          type    = "in"
+          proto   = "tcp"
+          dport   = "22"
+          comment = "Allow SSH"
+        },
+        {
+          action  = "ACCEPT"
+          type    = "in"
+          proto   = "udp"
+          dport   = "51820"
+          comment = "Allow Wireguard"
+        },
+        {
+          action  = "DROP"
+          type    = "in"
+          comment = "Drop all other incoming traffic"
+        }
+      ]
+    }
+  }
+}
 
 module "vm" {
   source   = "../../modules/vm"
@@ -138,6 +180,34 @@ module "vm" {
   snippets_storage    = var.snippets_storage
   snippets_node_name  = var.snippets_node_name
   cloud_init_template = "cloud-init-base.yaml.tftpl"
+
+  # Firewall
+  firewall_enable = each.value.firewall_enable
+  firewall_rules  = each.value.firewall_rules
+}
+
+module "container" {
+  source   = "../../modules/container"
+  for_each = local.container_definitions
+
+  # General
+  hostname  = each.value.hostname
+  node_name = var.node_name
+
+  # CPU / RAM / Disk
+  cores         = each.value.cores
+  memory        = each.value.memory
+  disk_size     = each.value.disk_size
+  disk_storage  = var.disk_storage
+  disk_image_id  = module.ubuntu_lxc_image.image_id
+
+  # Network
+  ipaddr      = each.value.ipaddr
+  gateway     = var.gateway
+  nameservers = var.nameservers
+
+  # System config
+  ssh_public_key = file(var.ssh_public_key)
 
   # Firewall
   firewall_enable = each.value.firewall_enable
