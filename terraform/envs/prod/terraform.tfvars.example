@@ -1,0 +1,100 @@
+#########################################
+# Proxmox API Configuration
+#########################################
+
+# Example: "https://pve.example.com:8006/api2/json"
+pve_api_url = "https://proxmox.example.com:8006/api2/json"
+
+# API token used by Terraform
+# Format: user@realm!tokenname
+pve_token_id = "terraform@pve!tf-token"
+
+# Secret belonging to the token above
+pve_token_secret = "CHANGE_ME"
+
+# Skip TLS verification (true for labs, false for production)
+pve_tls_insecure = true
+
+# Proxmox SSH user used internally by provider (not for VM)
+pve_ssh_username = "root"
+
+
+#########################################
+# General Proxmox Node Settings
+#########################################
+
+# Node where VMs and CTs will be created
+node_name = "pve"
+
+# Storage where VM disks will be placed
+disk_storage = "local-lvm"
+
+# Storage used for images (qcow2 and LXC templates)
+disk_image_storage = "local"
+
+
+#########################################
+# Networking
+#########################################
+
+# Gateway for all VMs and containers
+gateway = "192.168.1.1"
+
+# DNS servers (can be multiple)
+nameservers = [
+  "1.1.1.1",
+  "8.8.8.8"
+]
+
+
+#########################################
+# Cloud-init Settings
+#########################################
+
+# Storage where Cloud-init user-data snippets will be stored
+snippets_storage = "local"
+
+# Node that contains snippets storage (usually same as node_name)
+snippets_node_name = "pve"
+
+# Default Linux user created via cloud-init
+user = "ubuntu"
+
+# Path to public SSH key injected into all VMs and CTs
+ssh_public_key = "~/.ssh/id_rsa.pub"
+
+# Default timezone for new machines
+timezone = "Europe/Moscow"
+
+# Default locale
+locale = "ru_RU.UTF-8"
+
+
+#########################################
+# VirtioFS Shared Directories
+#########################################
+# Only used by vm-storage-node
+virtiofs = [
+  {
+    name = "shared-data"
+    path = "/mnt/storage/data"
+    comment = "Shared directory for storage VM"
+  }
+]
+
+
+#########################################
+# PCI Devices for GPU Worker Node
+#########################################
+# Example for NVIDIA GPU passthrough
+pci_devices = [
+  {
+    name         = "nvidia-gpu"
+    path         = "0000:01:00.0"
+    id           = "10de:1eb8"
+    subsystem_id = "10de:12a3"
+    iommu_group  = 1
+    mediated_devices = false
+    comment      = "PCI GPU passthrough for k8s GPU worker"
+  }
+]

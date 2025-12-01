@@ -1,4 +1,5 @@
 module "ubuntu_image" {
+  # Download KVM cloud image for VM provisioning
   source = "../../modules/image"
 
   disk_image_storage = var.disk_image_storage
@@ -10,6 +11,7 @@ module "ubuntu_image" {
 }
 
 module "ubuntu_lxc_image" {
+  # Download LXC template for containers
   source = "../../modules/image"
 
   disk_image_storage = var.disk_image_storage
@@ -34,6 +36,7 @@ locals {
       firewall_rules  = []
     }
 
+    # Declarative VM configurations — easy to extend or override
     "vm-ops-node" = {
       hostname        = "vm-ops-node"
       cores           = 2
@@ -116,6 +119,7 @@ locals {
   }
 
   container_definitions = {
+    # Declarative container configurations — easy to extend or override
     "ct-vpn" = {
       hostname        = "ct-vpn"
       cores           = 1
@@ -149,6 +153,7 @@ locals {
 }
 
 module "vm" {
+  # Parametrized VM module — reusable across environments
   source   = "../../modules/vm"
   for_each = local.vm_definitions
 
@@ -187,6 +192,7 @@ module "vm" {
 }
 
 module "container" {
+  # Parametrized container module — reusable across environments
   source   = "../../modules/container"
   for_each = local.container_definitions
 

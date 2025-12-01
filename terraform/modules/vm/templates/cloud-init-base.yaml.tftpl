@@ -9,16 +9,18 @@ users:
     groups: sudo
     shell: /bin/bash
     sudo: ALL=(ALL) NOPASSWD:ALL
+    # Password hash is generated via bcrypt for security
     passwd: ${password_hash}
     lock_passwd: false
     ssh_authorized_keys:
+      # Inject SSH key to avoid password SSH login
       - ${ssh_public_key}
 
 chpasswd:
   expire: false
 
 ssh_pwauth: false
-disable_root: true
+disable_root: true   # Prevent direct root login for security
 ssh_deletekeys: true
 ssh_genkeytypes:
   - ed25519
@@ -26,10 +28,12 @@ ssh_genkeytypes:
 package_update: true
 package_upgrade: true
 packages:
+  # Ensure QEMU Guest Agent is installed for Proxmox integration
   - qemu-guest-agent
 
 timezone: ${timezone}
 locale: ${locale}
 
 runcmd:
+  # Explicitly enable the guest agent service
   - [systemctl, enable, --now, qemu-guest-agent.service]
