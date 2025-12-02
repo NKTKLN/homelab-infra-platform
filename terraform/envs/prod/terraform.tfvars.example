@@ -89,12 +89,12 @@ virtiofs = [
 # Example for NVIDIA GPU passthrough
 pci_devices = [
   {
-    name         = "nvidia-gpu"
-    path         = "0000:01:00.0"
-    id           = "10de:1eb8"
-    subsystem_id = "10de:12a3"
-    iommu_group  = 1
+    name             = "nvidia-gpu"
+    path             = "0000:01:00.0"
+    id               = "10de:1eb8"
+    subsystem_id     = "10de:12a3"
+    iommu_group      = 1
     mediated_devices = false
-    comment      = "PCI GPU passthrough for k8s GPU worker"
+    comment          = "PCI GPU passthrough for k8s GPU worker"
   }
 ]
