@@ -1,0 +1,8 @@
+---
+- name: Apply sysctl hardening
+  template:
+    src: 99-hardening.conf.j2
+    dest: /etc/sysctl.d/99-hardening.conf
+
+- name: Reload sysctl
+  command: sysctl --system

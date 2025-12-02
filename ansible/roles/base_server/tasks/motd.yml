@@ -1,0 +1,8 @@
+---
+- name: Install custom MOTD script
+  template:
+    src: motd.sh.j2
+    dest: /etc/profile.d/motd.sh
+    mode: '0755'
+    owner: root
+    group: root

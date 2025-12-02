@@ -1,0 +1,14 @@
+Port {{ ssh_port }}
+PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+ChallengeResponseAuthentication no
+UsePAM yes
+X11Forwarding no
+
+AllowUsers {{ username }}
+ClientAliveInterval 300
+ClientAliveCountMax 2
+PermitEmptyPasswords no
+AllowAgentForwarding yes
+AllowTcpForwarding yes
