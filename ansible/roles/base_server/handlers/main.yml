@@ -1,4 +1,6 @@
 ---
+# Handlers for base_server role.
+
 - name: restart ssh
   service:
     name: ssh
@@ -9,3 +11,14 @@
   service:
     name: fail2ban
     state: restarted
+    enabled: true
+
+- name: stop motd-news
+  service:
+    name: motd-news
+    state: stopped
+    enabled: false
+
+- name: Reload sysctl
+  command: sysctl --system
+  changed_when: false  # Reload is idempotent and does not imply actual changes

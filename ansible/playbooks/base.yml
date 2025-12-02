@@ -1,0 +1,9 @@
+---
+# Apply baseline configuration to all VM servers.
+
+- name: Baseline setup for all servers
+  hosts: vms
+  become: true
+
+  roles:
+    - { role: base_server, tags: ['base'] }

@@ -1,16 +1,14 @@
 ---
+# Install and configure Fail2ban to protect SSH from brute-force attacks.
+
 - name: Install fail2ban
   apt:
     name: fail2ban
     state: present
+  when: ansible_facts['os_family'] == 'Debian'
 
 - name: Configure fail2ban jail
-  copy:
+  template:
+    src: jail.local.j2
     dest: /etc/fail2ban/jail.local
-    content: |
-      [sshd]
-      enabled = true
-      port = {{ ssh_port }}
-      logpath = /var/log/auth.log
-      maxretry = 5
   notify: restart fail2ban

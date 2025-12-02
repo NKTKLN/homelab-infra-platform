@@ -124,7 +124,7 @@ variable "timezone" {
 variable "locale" {
   description = "System locale for the VM"
   type        = string
-  default     = "ru_RU.UTF-8"
+  default     = "en_US.UTF-8"
 }
 
 # Firewall

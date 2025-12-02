@@ -36,7 +36,6 @@ locals {
       firewall_rules  = []
     }
 
-    # Declarative VM configurations — easy to extend or override
     "vm-ops-node" = {
       hostname        = "vm-ops-node"
       cores           = 2
@@ -119,7 +118,6 @@ locals {
   }
 
   container_definitions = {
-    # Declarative container configurations — easy to extend or override
     "ct-vpn" = {
       hostname        = "ct-vpn"
       cores           = 1

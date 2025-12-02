@@ -2,8 +2,13 @@ version: '3'
 
 env:
   TERRAFORM_DIR: 'terraform/envs/prod'
+  ANSIBLE_DIR: 'ansible'
+  SCRIPTS_DIR: 'scripts'
+
+  TF_PROVIDER: '{{.TF_PROVIDER | default "tofu"}}'
 
 tasks:
+  # Commitizen
   cz-commit:
     desc: Create a commit using Commitizen (Conventional Commits standard)
     cmds:
@@ -25,41 +30,42 @@ tasks:
       - cz bump
       - git push --follow-tags
 
+  # Terraform / OpenTofu
   tf-init:
-    desc: Initialize Terraform in terraform directory
+    desc: Initialize Terraform/OpenTofu in terraform directory
     dir: '{{.TERRAFORM_DIR}}'
     cmds:
-      - terraform init
+      - '{{.TF_PROVIDER}} init'
 
   tf-validate:
-    desc: Validate Terraform configuration
+    desc: Validate Terraform/OpenTofu configuration
     dir: '{{.TERRAFORM_DIR}}'
     cmds:
-      - terraform validate
+      - '{{.TF_PROVIDER}} validate'
 
   tf-plan:
     desc: Show the execution plan
     dir: '{{.TERRAFORM_DIR}}'
     cmds:
-      - terraform plan
+      - '{{.TF_PROVIDER}} plan'
 
   tf-apply:
     desc: Apply infrastructure changes
     dir: '{{.TERRAFORM_DIR}}'
     cmds:
-      - terraform apply
+      - '{{.TF_PROVIDER}} apply'
 
   tf-destroy:
     desc: Destroy all managed infrastructure
     dir: '{{.TERRAFORM_DIR}}'
     cmds:
-      - terraform destroy
+      - '{{.TF_PROVIDER}} destroy'
 
   tf-fmt:
-    desc: Format Terraform files
+    desc: Format Terraform/OpenTofu files
     dir: '{{.TERRAFORM_DIR}}'
     cmds:
-      - terraform fmt -recursive
+      - '{{.TF_PROVIDER}} fmt -recursive'
 
   tf-all:
     desc: Run fmt → init → validate → plan (common workflow)
@@ -68,3 +74,35 @@ tasks:
       - task: tf-init
       - task: tf-validate
       - task: tf-plan
+
+  # Ansible
+  # ansible-lint:
+  #   desc: Run ansible-lint for playbooks
+  #   dir: '{{.ANSIBLE_DIR}}'
+  #   cmds:
+  #     - ansible-lint playbooks/base.yml
+
+  # ansible-check:
+  #   desc: Check ansible playbooks using --check mode
+  #   dir: '{{.ANSIBLE_DIR}}'
+  #   cmds:
+  #     - ansible-playbook playbooks/base.yml --check
+
+  # ansible-run:
+  #   desc: Apply Ansible configuration
+  #   dir: '{{.ANSIBLE_DIR}}'
+  #   cmds:
+  #     - ansible-playbook -i inventory/hosts.ini playbooks/base.yml
+
+  # ansible-ping:
+  #   desc: Ping all hosts from inventory
+  #   dir: '{{.ANSIBLE_DIR}}'
+  #   cmds:
+  #     - ansible all -m ping -i inventory/hosts.ini
+
+  # Scripts
+  refresh-known-hosts:
+    desc: Refresh SSH known_hosts based on Ansible inventory
+    dir: '{{.SCRIPTS_DIR}}'
+    cmds:
+      - bash refresh_known_hosts.sh

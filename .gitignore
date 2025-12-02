@@ -31,6 +31,44 @@ override.tf.json
 *.auto.tfvars.json
 
 # ========================
+# Ansible
+# ========================
+
+# Local facts
+*.fact
+
+# Vault passwords
+.vault_pass
+.vault_pass.txt
+.vault_password
+vault_pass.txt
+
+# Ansible retry files
+*.retry
+
+# Temporary & cache
+*.tmp
+*.bak
+*.swp
+*.swo
+tmp/
+cache/
+ansible.log
+
+# Inventory files with sensitive data
+inventory.yaml
+inventory.yml
+inventory.ini
+inventory/*_vault.yml
+inventory/*_secret.yml
+
+# Private vars
+group_vars/*_vault.yml
+host_vars/*_vault.yml
+group_vars/*_secret.yml
+host_vars/*_secret.yml
+
+# ========================
 # IDEs / Editors
 # ========================
 .idea/
@@ -72,4 +110,3 @@ Todo.md
 .DS_Store
 Thumbs.db
 desktop.ini
-

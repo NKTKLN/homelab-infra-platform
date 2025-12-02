@@ -86,7 +86,7 @@ variable "timezone" {
 variable "locale" {
   description = "System locale for the VMs"
   type        = string
-  default     = "ru_RU.UTF-8"
+  default     = "en_US.UTF-8"
 }
 
 # VirtioFS Shared Directories
