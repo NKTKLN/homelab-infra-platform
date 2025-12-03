@@ -26,8 +26,8 @@ common_packages:
   - software-properties-common  # Adds add-apt-repository and helpers
   - acl                # File system ACL support
 
-# Enable/disable host firewall (UFW).
-common_firewall_enabled: false
+# Enable host firewall (UFW).
+common_firewall_enabled: true
 
 # Enable stricter SSH configuration via template.
 common_harden_ssh: true

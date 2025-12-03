@@ -1,0 +1,9 @@
+---
+
+- name: Configure VPN servers
+  hosts: vpn
+  become: true
+
+  roles:
+    - { role: base_container, tags: ['base_container'] }
+    - { role: wireguard, tags: ['vpn'] }

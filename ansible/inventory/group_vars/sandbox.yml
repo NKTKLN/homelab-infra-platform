@@ -1,0 +1,46 @@
+---
+# Special parameters for sandbox nodes
+
+# Common baseline packages installed on sandbox servers.
+common_packages:
+  - ca-certificates            # Provides CA certificates for HTTPS
+  - gnupg                      # GPG for signing/verifying packages
+  - apt-transport-https        # Enables APT to use HTTPS repositories
+  - curl                       # Command-line HTTP client
+  - wget                       # Alternative file download tool
+  - openssh-client             # SSH client for remote access
+  - socat                      # Multipurpose relay/networking tool
+  - net-tools                  # Legacy networking tools (if needed)
+  - iproute2                   # Modern network configuration tools
+  - iputils-ping               # ping and related utilities
+  - dnsutils                   # dig, nslookup, and other DNS tools
+  - traceroute                 # Network route diagnostics
+  - lsof                       # Lists open files and sockets
+  - htop                       # Interactive process viewer
+  - btop                       # Modern resource monitor
+  - strace                     # System call tracer
+  - ncdu                       # Disk usage analyzer
+  - tree                       # Recursive directory listing
+  - vim                        # CLI text editor
+  - nano                       # Simple text editor
+  - neovim                     # Modern Vim fork
+  - tmux                       # Terminal multiplexer
+  - unzip                      # Extract .zip archives
+  - zip                        # Create .zip archives
+  - tar                        # Tarball archive tool
+  - rsync                      # Efficient file synchronization
+  - acl                        # File system ACL support
+  - jq                         # JSON processor
+  - yq                         # YAML/YML processor
+  - make                       # Build automation tool
+  - build-essential            # GCC, g++, make, etc.
+  - pkg-config                 # Package configuration helper
+  - git                        # Version control system
+  - python3                    # System Python interpreter
+  - python3-pip                # Python package manager
+  - python3-venv               # Virtual environment support
+  - golang                     # Go programming language
+  - software-properties-common # Enables add-apt-repository and PPAs
+
+# Disable host firewall (UFW).
+common_firewall_enabled: false
