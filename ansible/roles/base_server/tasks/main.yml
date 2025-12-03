@@ -2,6 +2,9 @@
 # Main task file for the base_server role.
 # Includes logically separated task files grouped by feature.
 
+- include_tasks: updates.yml
+  tags: [updates]
+
 - include_tasks: packages.yml
   tags: [packages]
 
@@ -10,12 +13,6 @@
 
 - include_tasks: ufw.yml
   tags: [ufw]
-
-- include_tasks: updates.yml
-  tags: [updates]
-
-- include_tasks: fail2ban.yml
-  tags: [fail2ban]
 
 - include_tasks: sysctl.yml
   tags: [sysctl]
