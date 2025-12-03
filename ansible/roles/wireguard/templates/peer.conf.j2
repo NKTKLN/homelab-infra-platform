@@ -1,0 +1,9 @@
+[Interface]
+PrivateKey = {{ wg_peer_private_key }}
+Address = {{ wg_allowed_ip }}
+
+[Peer]
+PublicKey = {{ wg_public_key }}
+Endpoint = {{ vpn_endpoint }}:{{ vpn_port }}
+AllowedIPs = 0.0.0.0/0, ::/0
+PersistentKeepalive = 25

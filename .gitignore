@@ -92,6 +92,7 @@ tmp.*
 *.token
 *.key
 *.pem
+sensitive/
 
 # ========================
 # Custom ignore rules

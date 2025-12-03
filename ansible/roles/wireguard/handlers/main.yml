@@ -1,0 +1,8 @@
+---
+# Handlers for wireguard role.
+
+- name: start wireguard
+  systemd:
+    name: "wg-quick@{{ vpn_interface }}"
+    state: started
+    enabled: true

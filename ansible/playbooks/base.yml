@@ -1,16 +1,24 @@
 ---
 # Apply baseline configuration to all VM servers and containers.
 
-- name: Baseline setup for all servers
-  hosts: vms
-  become: true
+# - name: Baseline setup for all servers
+#   hosts: vms
+#   become: true
 
-  roles:
-    - { role: base_server, tags: ['base_vm'] }
+#   roles:
+#     - { role: base_server, tags: ['base_vm'] }
 
-- name: Baseline setup for all containers
-  hosts: containers
+# - name: Baseline setup for all containers
+#   hosts: containers
+#   become: true
+
+#   roles:
+#     - { role: base_container, tags: ['base_container'] }
+
+- name: Configure VPN servers
+  hosts: vpn
   become: true
 
   roles:
     - { role: base_container, tags: ['base_container'] }
+    - { role: wireguard, tags: ['vpn'] }

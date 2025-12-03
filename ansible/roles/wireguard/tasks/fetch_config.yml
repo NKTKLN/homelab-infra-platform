@@ -1,0 +1,15 @@
+---
+
+- name: Find all peer config files
+  find:
+    paths: /etc/wireguard/peer
+    file_type: file
+    patterns: "*.conf"
+  register: peer_config_files
+
+- name: Fetch peer config file
+  fetch:
+    src: "{{ item.path }}"
+    dest: ../../sensitive/wg_config/
+    flat: yes
+  loop: "{{ peer_config_files.files }}"
