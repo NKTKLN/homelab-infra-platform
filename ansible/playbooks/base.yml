@@ -1,9 +1,16 @@
 ---
-# Apply baseline configuration to all VM servers.
+# Apply baseline configuration to all VM servers and containers.
 
 - name: Baseline setup for all servers
   hosts: vms
   become: true
 
   roles:
-    - { role: base_server, tags: ['base'] }
+    - { role: base_server, tags: ['base_vm'] }
+
+- name: Baseline setup for all containers
+  hosts: containers
+  become: true
+
+  roles:
+    - { role: base_container, tags: ['base_container'] }

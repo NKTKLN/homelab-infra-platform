@@ -1,0 +1,27 @@
+# Managed by Ansible - do not edit manually.
+# Hardened SSH configuration for all servers.
+
+Port {{ ssh_port }}
+PermitRootLogin yes
+PasswordAuthentication no
+PubkeyAuthentication yes
+ChallengeResponseAuthentication no
+UsePAM yes
+X11Forwarding no
+
+# Required for file transfers (sftp/scp)
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+ClientAliveInterval 300
+ClientAliveCountMax 2
+PermitEmptyPasswords no
+AllowAgentForwarding yes
+AllowTcpForwarding yes
+
+# Limit algorithms to modern, secure options.
+KexAlgorithms curve25519-sha256
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com
+MACs hmac-sha2-512,hmac-sha2-256
+
+LoginGraceTime 30
+MaxAuthTries 3

@@ -1,0 +1,18 @@
+---
+# Main task file for the base_container role.
+# Includes logically separated task files grouped by feature.
+
+- include_tasks: updates.yml
+  tags: [updates]
+
+- include_tasks: packages.yml
+  tags: [packages]
+
+- include_tasks: ssh.yml
+  tags: [ssh]
+
+- include_tasks: sysctl.yml
+  tags: [sysctl]
+
+- include_tasks: cleanup.yml
+  tags: [cleanup]
