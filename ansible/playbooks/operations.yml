@@ -1,0 +1,12 @@
+---
+# Apply configuration to all operations servers.
+
+- name: Setup operations servers
+  hosts: operations
+  become: true
+
+  roles:
+    - { role: base_server, tags: ['base_vm'] }
+    - { role: zsh, tags: ['zsh'] }
+    - { role: operations_sever, tags: ['operations'] }
+    

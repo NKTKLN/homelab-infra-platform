@@ -1,0 +1,27 @@
+---
+
+- name: Install required packages
+  apt:
+    name:
+      - software-properties-common
+    state: present
+    update_cache: yes
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Add Ansible PPA
+  apt_repository:
+    repo: ppa:ansible/ansible
+    state: present
+    update_cache: yes
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Install Ansible
+  apt:
+    name: ansible
+    state: present
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Verify Ansible installation
+  command: ansible --version
+  register: ansible_version
+  changed_when: false
