@@ -1,0 +1,14 @@
+---
+
+- name: Ensure mount point exists
+  file:
+    path: "{{ virtiofs_mount_path }}"
+    state: directory
+
+- name: Mount virtiofs share with automount
+  mount:
+    path: "{{ virtiofs_mount_path }}"
+    src: "{{ virtiofs_source }}"
+    fstype: virtiofs
+    opts: defaults
+    state: mounted
