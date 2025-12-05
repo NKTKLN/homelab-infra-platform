@@ -8,5 +8,5 @@
   roles:
     - { role: base_server, tags: ['base_vm'] }
     - { role: zsh, tags: ['zsh'] }
+    - { role: fail2ban, tags: ['fail2ban'] }
     - { role: operations_sever, tags: ['operations'] }
-    
