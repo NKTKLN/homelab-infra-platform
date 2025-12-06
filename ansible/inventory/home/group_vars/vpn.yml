@@ -1,0 +1,5 @@
+---
+# Special parameters for VPN nodes
+
+sysctl_settings:
+  net.ipv4.ip_forward: 1
