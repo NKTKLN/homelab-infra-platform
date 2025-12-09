@@ -38,8 +38,8 @@
     mode: "0644"   # Remove executable bit
   loop: "{{ motd_scripts.files }}"
   when:
-    - motd_scripts is defined
-    - (motd_scripts.matched | default(0)) > 0
+  - motd_scripts is defined
+  - (motd_scripts.matched | default(0)) > 0
 
 # Ensure motd-news systemd timer is disabled.
 - name: Check if motd-news.timer exists

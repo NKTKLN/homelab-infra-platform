@@ -5,32 +5,20 @@
     url: https://get.opentofu.org/opentofu.gpg
     keyring: /usr/share/keyrings/opentofu.gpg
     state: present
-  when: 
-    - ansible_facts['os_family'] == 'Debian'
-    - common_proxy == 'opentofu'
 
 - name: Add OpenTofu repository
   apt_repository:
     repo: "deb [signed-by=/usr/share/keyrings/opentofu.gpg] https://packages.opentofu.org/opentofu/tofu/apt/ all main"
     filename: opentofu
     state: present
-  when: 
-    - ansible_facts['os_family'] == 'Debian'
-    - common_proxy == 'opentofu'
 
 - name: Install OpenTofu
   apt:
     name: opentofu
     state: present
     update_cache: yes
-  when: 
-    - ansible_facts['os_family'] == 'Debian'
-    - common_proxy == 'opentofu'
 
 - name: Verify OpenTofu installation
   command: tofu version
   register: tofu_version
   changed_when: false
-  when: 
-    - ansible_facts['os_family'] == 'Debian'
-    - common_proxy == 'opentofu'

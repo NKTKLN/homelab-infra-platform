@@ -5,4 +5,3 @@
   apt:
     autoremove: yes
     purge: yes
-  when: ansible_facts['os_family'] == 'Debian'

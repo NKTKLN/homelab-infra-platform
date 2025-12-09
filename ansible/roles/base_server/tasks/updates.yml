@@ -5,7 +5,6 @@
   apt:
     name: unattended-upgrades
     state: present
-  when: ansible_facts['os_family'] == 'Debian'
 
 - name: Enable unattended upgrades
   copy:
@@ -13,11 +12,10 @@
     content: |
       APT::Periodic::Update-Package-Lists "1";
       APT::Periodic::Unattended-Upgrade "1";
-  when: ansible_facts['os_family'] == 'Debian'
 
 - name: Full upgrade
   apt:
     update_cache: yes
     upgrade: dist
     autoremove: yes
-  when: ansible_facts['os_family'] == 'Debian'
+  when: perform_dist_upgrade | bool

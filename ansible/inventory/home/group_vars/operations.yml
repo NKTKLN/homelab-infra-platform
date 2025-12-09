@@ -1,35 +1,16 @@
 ---
 # Special parameters for operations nodes
 
-# Common baseline packages installed on operations servers.
-common_packages:
-  - ca-certificates            # Provides CA certificates for HTTPS
-  - gnupg                      # GPG for signing/verifying packages
-  - apt-transport-https        # Enables APT to use HTTPS repositories
-  - curl                       # Command-line HTTP client
-  - wget                       # Alternative file download tool
-  - openssh-client             # SSH client for remote access
-  - iproute2                   # Modern network configuration tools
-  - iputils-ping               # ping and related utilities
-  - lsof                       # Lists open files and sockets
-  - htop                       # Interactive process viewer
-  - tree                       # Recursive directory listing
-  - vim                        # CLI text editor
-  - nano                       # Simple text editor
-  - neovim                     # Modern Vim fork
-  - tmux                       # Terminal multiplexer
-  - unzip                      # Extract .zip archives
-  - zip                        # Create .zip archives
-  - tar                        # Tarball archive tool
-  - rsync                      # Efficient file synchronization
-  - acl                        # File system ACL support
-  - jq                         # JSON processor
-  - yq                         # YAML/YML processor
-  - git                        # Version control system
-  - python3                    # System Python interpreter
-  - python3-pip                # Python package manager
-  - software-properties-common # Enables add-apt-repository and PPAs
+# Common extra packages installed on operations servers.
+common_packages_extra:
+- gnupg                      # GPG for signing/verifying packages
+- apt-transport-https        # Enables APT to use HTTPS repositories
+- openssh-client             # SSH client for remote access
+- iproute2                   # Modern network configuration tools
+- iputils-ping               # ping and related utilities
+- lsof                       # Lists open files and sockets
+- tree                       # Recursive directory listing
+- yq                         # YAML/YML processor
 
 # Ports that will be allowed through UFW (when enabled).
-ufw_allowed_ports:
-  - "{{ ssh_port }}"
+ufw_allowed_ports: ["{{ ssh_port }}"]

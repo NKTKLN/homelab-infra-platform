@@ -5,39 +5,31 @@
   apt:
     name: ufw
     state: present
-  when: 
-    - common_firewall_enabled | bool
-    - ansible_facts['os_family'] == 'Debian'
 
 - name: Default deny incoming
-  ufw:
+  community.general.ufw:
     direction: incoming
     policy: deny
-  when: 
-    - common_firewall_enabled | bool
-    - ansible_facts['os_family'] == 'Debian'
 
 - name: Default allow outgoing
-  ufw:
+  community.general.ufw:
     direction: outgoing
     policy: allow
-  when: 
-    - common_firewall_enabled | bool
-    - ansible_facts['os_family'] == 'Debian'
 
-- name: Allow needed ports
-  ufw:
+- name: Allow needed TCP ports
+  community.general.ufw:
     rule: allow
     port: "{{ item }}"
     proto: tcp
-  loop: "{{ ufw_allowed_ports }}"
-  when: 
-    - common_firewall_enabled | bool
-    - ansible_facts['os_family'] == 'Debian'
+  loop: "{{ ufw_allowed_ports_tcp }}"
+
+- name: Allow needed UDP ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: udp
+  loop: "{{ ufw_allowed_ports_udp }}"
 
 - name: Enable UFW
-  ufw:
+  community.general.ufw:
     state: enabled
-  when: 
-    - common_firewall_enabled | bool
-    - ansible_facts['os_family'] == 'Debian'

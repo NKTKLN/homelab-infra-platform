@@ -6,11 +6,13 @@
   become: true
 
   roles:
-    - { role: base_server, tags: ['base_vm'] }
+  - { role: common_baseline, tags: ['common_baseline'] }
+  - { role: base_server, tags: ['base_vm'] }
 
 - name: Baseline setup for all containers
   hosts: containers
   become: true
 
   roles:
-    - { role: base_container, tags: ['base_container'] }
+  - { role: common_baseline, tags: ['common_baseline'] }
+  - { role: base_container, tags: ['base_container'] }

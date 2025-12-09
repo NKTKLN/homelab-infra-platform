@@ -10,7 +10,7 @@ UsePAM yes
 X11Forwarding no
 
 # Required for file transfers (sftp/scp)
-Subsystem sftp /usr/lib/openssh/sftp-server
+Subsystem sftp internal-sftp
 
 # Restrict SSH access to specific users only.
 AllowUsers {% for user in ssh_allowed_users %}{{ user }} {% endfor %}
@@ -22,9 +22,9 @@ AllowAgentForwarding yes
 AllowTcpForwarding yes
 
 # Limit algorithms to modern, secure options.
-KexAlgorithms curve25519-sha256
-Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com
-MACs hmac-sha2-512,hmac-sha2-256
+KexAlgorithms { % for alg in ssh_kex_algorithms %}{{ alg }} {% endfor %}
+Ciphers { % for cipher in ssh_ciphers %}{{ cipher }} {% endfor %}
+MACs { % for mac in ssh_macs %}{{ mac }} {% endfor %}
 
 LoginGraceTime 30
 MaxAuthTries 5

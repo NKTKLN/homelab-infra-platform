@@ -12,7 +12,3 @@
     name: motd-news
     state: stopped
     enabled: false
-
-- name: reload sysctl
-  command: sysctl --system
-  changed_when: false  # Reload is idempotent and does not imply actual changes

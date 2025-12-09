@@ -2,28 +2,12 @@
 # Default variables for the base_container role.
 # These values can be overridden in group_vars/host_vars per environment.
 
-# Common baseline packages installed on all servers.
-common_packages:
-  - ca-certificates    # Ensure CA certificates are present for HTTPS
-  - curl               # HTTP client for scripting/debugging
-  - wget               # Alternative HTTP/FTP client
-  - vim                # CLI text editor
-  - iproute2           # Modern networking utilities
-  - iputils-ping       # Basic network connectivity testing tool
-  - dnsutils           # DNS tools (dig, nslookup, etc.)
-
 # Enable stricter SSH configuration via template.
 common_harden_ssh: true
 
 # Default SSH port for this environment.
 ssh_port: 22
 
-# Kernel/network hardening settings applied via sysctl.
-sysctl_settings:
-  net.ipv4.conf.all.rp_filter: 1
-  net.ipv4.tcp_syncookies: 1
-  net.ipv4.conf.all.accept_redirects: 0
-  net.ipv4.conf.all.send_redirects: 0
-  net.ipv4.icmp_echo_ignore_broadcasts: 1
-  kernel.kptr_restrict: 2
-  kernel.dmesg_restrict: 1
+ssh_kex_algorithms: ["curve25519-sha256"]
+ssh_ciphers: ["chacha20-poly1305@openssh.com", "aes256-gcm@openssh.com"]
+ssh_macs: ["hmac-sha2-512", "hmac-sha2-256"]

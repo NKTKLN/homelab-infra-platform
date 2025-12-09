@@ -7,4 +7,3 @@
     dest: /etc/ssh/sshd_config
     mode: 0600
   notify: restart ssh
-  when: common_harden_ssh | bool
