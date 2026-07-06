@@ -1,0 +1,42 @@
+# Internet speed check (direct + via the AmneziaWG SOCKS5 proxy), run as a
+# systemd timer on the host. Results are written as a Prometheus textfile so
+# the already-running node_exporter picks them up on every scrape — no extra
+# exporter/container needed (see node_exporter_textfile_dir).
+speedtest_dir: /opt/speedtest
+speedtest_script_path: "{{ speedtest_dir }}/speedtest.sh"
+
+# Where results land — must match node_exporter_textfile_dir in the
+# node_exporter role. Hardcoded (not a cross-role var reference) because
+# node_exporter runs in a separate, later play in site.yml ("Node exporter
+# for all VMs"), so its defaults aren't loaded yet when this role's tasks run.
+speedtest_textfile_dir: /var/lib/node_exporter/textfile
+
+# SOCKS5 endpoint of the AmneziaWG proxy (see amnezia_proxy role: bound to
+# that host's LAN IP, port 1080). Hardcoded like the LAN CIDRs elsewhere in
+# this repo since the two roles run in different plays and don't share vars.
+speedtest_socks_proxy: "socks5h://192.168.1.20:1080"
+
+# Cloudflare's speed-test endpoint: no auth, anycast, fine over the SOCKS
+# path. Also used as the direct-path fallback if the Yandex probe below is
+# unreachable.
+speedtest_download_url: "https://speed.cloudflare.com/__down?bytes={{ speedtest_download_bytes }}"
+speedtest_download_bytes: 20971520 # 20MB
+
+# Cloudflare's anycast edge is throttled/unreliable on some ISPs' "clean"
+# (non-proxied) routes, so the direct-path test instead resolves a real test
+# server from Yandex Internetometer's probe API — same approach as
+# https://github.com/Beta-Blaze/yandex-internetometer-cli, minus its
+# multi-threaded ramp-up (overkill for a periodic single-sample check).
+# The API is undocumented/internal, so a failed lookup falls back to Cloudflare.
+speedtest_yandex_probes_url: "https://yandex.ru/internet/api/v0/get-probes"
+speedtest_yandex_user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+# Picks the "50mb" download probe, matching the reference CLI's default.
+speedtest_yandex_probe_marker: "50mb"
+
+# Abort a path's test after this long (seconds) — keeps a slow/broken proxy
+# from stalling the whole run. The Yandex probe file is ~50MB, so this also
+# doubles as the sample window for the direct-path measurement.
+speedtest_curl_max_time: 30
+
+# How often to run the check. Any systemd OnCalendar expression.
+speedtest_schedule: "hourly"

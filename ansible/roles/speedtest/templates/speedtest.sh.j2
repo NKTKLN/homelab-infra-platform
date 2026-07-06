@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# {{ ansible_managed }}
+set -uo pipefail
+
+TEXTFILE_DIR="{{ speedtest_textfile_dir }}"
+OUT_FILE="${TEXTFILE_DIR}/speedtest.prom"
+TMP_FILE="$(mktemp "${TEXTFILE_DIR}/.speedtest.XXXXXX")"
+trap 'rm -f "${TMP_FILE}"' EXIT
+
+FALLBACK_URL="{{ speedtest_download_url }}"
+MAX_TIME="{{ speedtest_curl_max_time }}"
+SOCKS_PROXY="{{ speedtest_socks_proxy }}"
+
+YANDEX_PROBES_URL="{{ speedtest_yandex_probes_url }}"
+YANDEX_USER_AGENT="{{ speedtest_yandex_user_agent }}"
+YANDEX_PROBE_MARKER="{{ speedtest_yandex_probe_marker }}"
+
+declare -A SUCCESS LATENCY DOWNLOAD_BPS
+
+# Cloudflare's anycast edge is throttled/unreliable on some ISPs' direct
+# route, so the direct-path test resolves a real nearby test server from
+# Yandex Internetometer's (undocumented) probe API instead — same source
+# https://github.com/Beta-Blaze/yandex-internetometer-cli uses. Falls back
+# to the Cloudflare URL if the lookup fails for any reason.
+resolve_yandex_download_url() {
+  local resp url
+  resp=$(curl -s --max-time 5 \
+    -H "User-Agent: ${YANDEX_USER_AGENT}" \
+    -H "Referer: https://yandex.ru/internet/" \
+    -H "Origin: https://yandex.ru" \
+    "${YANDEX_PROBES_URL}?t=$(date +%s%3N)" 2>/dev/null) || return 1
+
+  url=$(printf '%s' "${resp}" | jq -r --arg marker "${YANDEX_PROBE_MARKER}" \
+    '(.download.probes // [] | map(select(.url | contains($marker))) | .[0].url)
+     // (.download.probes // [] | .[0].url)
+     // empty' 2>/dev/null)
+
+  [[ -n "${url}" ]] || return 1
+  printf '%s' "${url}"
+}
+
+run_test() {
+  local path="$1" url="$2"
+  shift 2
+  local curl_out rc=0
+  curl_out=$(curl -s -o /dev/null --max-time "${MAX_TIME}" \
+    -w '%{http_code} %{time_connect} %{speed_download} %{size_download}' \
+    "$@" "${url}" 2>/dev/null) || rc=$?
+
+  local http_code time_connect speed_download size_download
+  read -r http_code time_connect speed_download size_download <<<"${curl_out:-0 0 0 0}"
+
+  # --max-time is a sampling window here, not just an error condition: a
+  # slow path (e.g. a throttled direct route) legitimately won't finish the
+  # whole file, but curl still reports a valid partial speed_download for
+  # whatever it did transfer. Only a real failure (no 200, no bytes) counts
+  # as unsuccessful — rc 28 (timeout) with data is a normal, successful read.
+  SUCCESS[$path]=0
+  if [[ "${http_code}" == "200" && "${size_download:-0}" != "0" ]]; then
+    SUCCESS[$path]=1
+  fi
+  LATENCY[$path]="${time_connect:-0}"
+  DOWNLOAD_BPS[$path]=$(awk -v s="${speed_download:-0}" 'BEGIN { printf "%.0f", s * 8 }')
+}
+
+# Direct — the ops node's normal route to the internet.
+direct_url="$(resolve_yandex_download_url)"
+[[ -n "${direct_url}" ]] || direct_url="${FALLBACK_URL}"
+run_test direct "${direct_url}"
+
+# Via the AmneziaWG SOCKS5 proxy (see amnezia_proxy role).
+run_test socks "${FALLBACK_URL}" -x "${SOCKS_PROXY}"
+
+{
+  echo "# HELP speedtest_success Whether the last speed check for this path succeeded (1) or failed (0)"
+  echo "# TYPE speedtest_success gauge"
+  for path in direct socks; do
+    echo "speedtest_success{path=\"${path}\"} ${SUCCESS[$path]}"
+  done
+
+  echo "# HELP speedtest_latency_seconds Time to establish the TCP connection to the test endpoint"
+  echo "# TYPE speedtest_latency_seconds gauge"
+  for path in direct socks; do
+    echo "speedtest_latency_seconds{path=\"${path}\"} ${LATENCY[$path]}"
+  done
+
+  echo "# HELP speedtest_download_bits_per_second Average download speed observed during the test"
+  echo "# TYPE speedtest_download_bits_per_second gauge"
+  for path in direct socks; do
+    echo "speedtest_download_bits_per_second{path=\"${path}\"} ${DOWNLOAD_BPS[$path]}"
+  done
+
+  echo "# HELP speedtest_last_run_timestamp_seconds Unix time the speed check last completed"
+  echo "# TYPE speedtest_last_run_timestamp_seconds gauge"
+  echo "speedtest_last_run_timestamp_seconds $(date +%s)"
+} >"${TMP_FILE}"
+
+mv "${TMP_FILE}" "${OUT_FILE}"
+chmod 0644 "${OUT_FILE}"
+trap - EXIT

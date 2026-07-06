@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Internet speed check (direct + SOCKS5)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart={{ speedtest_script_path }}

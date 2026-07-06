@@ -14,3 +14,7 @@ node_exporter_lan_cidr: "192.168.1.0/24"
 # LAN IP arrives with a 172.x source, which the LAN rule above would drop.
 # Covers docker0 (172.17/16) and Compose-created networks (172.18/16, …).
 node_exporter_docker_cidr: "172.16.0.0/12"
+
+# Textfile collector directory — host-side scripts (e.g. the speedtest role)
+# drop *.prom files here and node_exporter picks them up on every scrape.
+node_exporter_textfile_dir: /var/lib/node_exporter/textfile

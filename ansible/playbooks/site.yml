@@ -139,6 +139,11 @@
         name: grafana
       tags: [monitoring, grafana]
 
+    - name: Apply speedtest role
+      ansible.builtin.import_role:
+        name: speedtest
+      tags: [monitoring, speedtest]
+
 - name: Node exporter for all VMs
   hosts: vms
   become: true
