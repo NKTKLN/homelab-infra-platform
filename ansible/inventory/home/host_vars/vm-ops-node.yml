@@ -10,3 +10,8 @@ prometheus_alertmanager_telegram_chat_id: 0             # CHANGE_ME (channels ar
 # Telegram API is reached through the AmneziaWG SOCKS5 proxy on vm-amnezia-proxy
 # (amnezia_proxy role: SOCKS5 on port 1080, bound to its LAN IP).
 prometheus_alertmanager_telegram_proxy_url: "socks5://192.168.1.20:1080"
+
+# --- Grafana admin login ---
+# DO NOT commit the real password — override via ansible-vault, e.g.:
+#   ansible-vault encrypt_string 'S3cr3t!' --name grafana_admin_password
+grafana_admin_password: "CHANGE_ME"

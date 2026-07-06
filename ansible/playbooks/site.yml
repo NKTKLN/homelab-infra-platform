@@ -134,6 +134,11 @@
         name: prometheus
       tags: [monitoring, prometheus]
 
+    - name: Apply grafana role
+      ansible.builtin.import_role:
+        name: grafana
+      tags: [monitoring, grafana]
+
 - name: Node exporter for all VMs
   hosts: vms
   become: true

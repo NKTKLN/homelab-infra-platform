@@ -1,0 +1,31 @@
+# Grafana (runs as a Docker container). Joins the "monitoring" Docker network
+# created by the prometheus role, so it talks to Prometheus by container name
+# (see prometheus_container_name / prometheus_port, provided by that role).
+grafana_dir: /opt/grafana
+grafana_image: "grafana/grafana-oss:11.5.2"
+grafana_container_name: grafana
+
+# The grafana/grafana-oss image runs as the "grafana" user (uid/gid 472).
+# Mounted provisioning files must be readable by this user.
+grafana_run_uid: "472"
+grafana_run_gid: "472"
+
+# Listener
+grafana_port: 3000
+# Bind the web port to the host's LAN IP only (not 0.0.0.0)
+grafana_bind_ip: "{{ ansible_host }}"
+# Restrict inbound access to the web port to this network
+grafana_lan_cidr: "192.168.1.0/24"
+
+grafana_admin_user: nktkln
+# Keep the real password out of git — set via ansible-vault / host_vars, e.g.:
+#   ansible-vault encrypt_string 'S3cr3t!' --name grafana_admin_password
+grafana_admin_password: "CHANGE_ME"
+
+# Anonymous/sign-up access stays disabled; this instance is only reachable
+# from the LAN anyway (see grafana_lan_cidr above).
+grafana_allow_sign_up: false
+
+# Dashboards are provisioned from ansible/roles/grafana/files/dashboards/*.json
+# into this folder in the Grafana UI.
+grafana_dashboards_folder: "Homelab"

@@ -1,0 +1,83 @@
+- name: Ensure Debian family
+  ansible.builtin.assert:
+    that: ansible_facts.os_family == "Debian"
+    fail_msg: "This role supports only Debian/Ubuntu."
+
+- name: Ensure project directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ grafana_run_uid }}"
+    group: "{{ grafana_run_gid }}"
+    mode: "0750"
+  loop:
+    - "{{ grafana_dir }}"
+    - "{{ grafana_dir }}/provisioning/datasources"
+    - "{{ grafana_dir }}/provisioning/dashboards"
+    - "{{ grafana_dir }}/provisioning/dashboards/json"
+
+- name: Deploy datasource provisioning
+  ansible.builtin.template:
+    src: provisioning/datasources/datasources.yml.j2
+    dest: "{{ grafana_dir }}/provisioning/datasources/datasources.yml"
+    owner: "{{ grafana_run_uid }}"
+    group: "{{ grafana_run_gid }}"
+    mode: "0640"
+  notify: restart grafana
+
+- name: Deploy dashboard provider config
+  ansible.builtin.template:
+    src: provisioning/dashboards/dashboards.yml.j2
+    dest: "{{ grafana_dir }}/provisioning/dashboards/dashboards.yml"
+    owner: "{{ grafana_run_uid }}"
+    group: "{{ grafana_run_gid }}"
+    mode: "0640"
+  notify: restart grafana
+
+- name: Deploy dashboards
+  ansible.builtin.copy:
+    src: dashboards/
+    dest: "{{ grafana_dir }}/provisioning/dashboards/json/"
+    owner: "{{ grafana_run_uid }}"
+    group: "{{ grafana_run_gid }}"
+    mode: "0640"
+    # Dashboards are picked up on the provider's updateIntervalSeconds poll —
+    # no restart needed.
+
+- name: Deploy docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ grafana_dir }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: "0640"
+  notify: restart grafana
+
+# Owned by whichever compose project (prometheus or grafana) creates it first —
+# idempotent so this role doesn't depend on the prometheus role/tags having
+# run first (e.g. a `--tags grafana`-only run).
+- name: Ensure shared "monitoring" Docker network exists
+  ansible.builtin.command:
+    cmd: docker network create monitoring
+  register: grafana_monitoring_network
+  changed_when: grafana_monitoring_network.rc == 0
+  failed_when: >-
+    grafana_monitoring_network.rc != 0
+    and 'already exists' not in grafana_monitoring_network.stderr
+
+- name: Ensure grafana is running
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "{{ grafana_dir }}"
+  register: grafana_compose
+  changed_when: >-
+    ('Started' in grafana_compose.stderr)
+    or ('Created' in grafana_compose.stderr)
+    or ('Recreated' in grafana_compose.stderr)
+
+- name: Allow Grafana web port from LAN
+  community.general.ufw:
+    rule: allow
+    src: "{{ grafana_lan_cidr }}"
+    port: "{{ grafana_port }}"
+    proto: tcp

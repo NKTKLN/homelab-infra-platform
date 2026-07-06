@@ -1,0 +1,13 @@
+# {{ ansible_managed }}
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    # Reached over the shared "monitoring" Docker network by container name
+    # (see roles/prometheus/templates/docker-compose.yml.j2).
+    url: "http://{{ prometheus_container_name | default('prometheus') }}:{{ prometheus_port | default(9090) }}"
+    isDefault: true
+    editable: false

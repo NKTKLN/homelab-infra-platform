@@ -20,6 +20,8 @@ services:
       - /etc/localtime:/etc/localtime:ro
     ports:
       - "{{ prometheus_bind_ip }}:{{ prometheus_port }}:9090"
+    networks:
+      - monitoring
 
   alertmanager:
     image: {{ prometheus_alertmanager_image }}
@@ -35,7 +37,16 @@ services:
       - /etc/localtime:/etc/localtime:ro
     ports:
       - "{{ prometheus_bind_ip }}:{{ prometheus_alertmanager_port }}:9093"
+    networks:
+      - monitoring
 
 volumes:
   prometheus-data:
   alertmanager-data:
+
+# Named (not external) here: this compose project creates it, and the
+# grafana role's project joins it as an external network so Grafana can
+# reach Prometheus/Alertmanager by container name across compose stacks.
+networks:
+  monitoring:
+    name: monitoring
