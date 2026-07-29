@@ -1,0 +1,39 @@
+- name: Ensure Debian family
+  ansible.builtin.assert:
+    that: ansible_facts.os_family == "Debian"
+    fail_msg: "This role supports only Debian/Ubuntu."
+
+- name: Install prometheus-node-exporter package
+  ansible.builtin.apt:
+    name: prometheus-node-exporter
+    state: present
+    update_cache: true
+
+- name: Ensure k10temp kernel module is loaded (AMD CPU temperature sensor)
+  community.general.modprobe:
+    name: k10temp
+    state: present
+
+- name: Persist k10temp module across reboots
+  ansible.builtin.copy:
+    dest: /etc/modules-load.d/k10temp.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      k10temp
+
+- name: Configure node_exporter listen address
+  ansible.builtin.template:
+    src: prometheus-node-exporter.j2
+    dest: /etc/default/prometheus-node-exporter
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart node-exporter
+
+- name: Ensure node-exporter is enabled and running
+  ansible.builtin.service:
+    name: prometheus-node-exporter
+    state: started
+    enabled: true

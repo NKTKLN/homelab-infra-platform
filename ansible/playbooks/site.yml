@@ -92,7 +92,7 @@
       tags: [docker]
 
 - name: SSH trust for all Nodes
-  hosts: all
+  hosts: all:!hypervisor
   become: true
   tasks:
     - name: Apply ssh_trust role
@@ -151,4 +151,13 @@
     - name: Apply node_exporter role
       ansible.builtin.import_role:
         name: node_exporter
+      tags: [monitoring, node_exporter]
+
+- name: Node exporter for the Proxmox hypervisor (native apt package)
+  hosts: hypervisor
+  become: true
+  tasks:
+    - name: Apply node_exporter_native role
+      ansible.builtin.import_role:
+        name: node_exporter_native
       tags: [monitoring, node_exporter]

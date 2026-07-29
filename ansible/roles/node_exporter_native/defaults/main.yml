@@ -1,0 +1,6 @@
+# Prometheus node_exporter — native apt package (for bare-metal hosts where
+# we don't want to run Docker, e.g. the Proxmox hypervisor itself: Docker's
+# bridge/iptables rules can clash with Proxmox's own vmbr bridges/firewall).
+node_exporter_native_port: 9100
+# Bind the metrics port to the host's LAN IP only (not 0.0.0.0)
+node_exporter_native_bind_ip: "{{ ansible_host }}"

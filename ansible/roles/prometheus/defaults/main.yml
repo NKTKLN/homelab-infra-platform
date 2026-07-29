@@ -44,7 +44,7 @@ prometheus_alertmanager_telegram_send_resolved: true
 prometheus_alertmanager_telegram_proxy_url: ""
 
 # Inventory groups + ports the exporters listen on (see node_exporter / dcgm_exporter roles)
-prometheus_node_group: vms
+prometheus_node_group: node_exporter_targets
 prometheus_node_exporter_port: 9100
 prometheus_dcgm_group: gpu-workers
 prometheus_dcgm_exporter_port: 9400
@@ -52,4 +52,4 @@ prometheus_dcgm_exporter_port: 9400
 # Functional inventory groups used to derive each target's `role` label
 # (first match wins). Drives the control-node / network-node alerts and the
 # Alertmanager grouping/inhibition.
-prometheus_role_groups: [operations, nodes, gpu-workers, proxy, vpn, gateway]
+prometheus_role_groups: [operations, nodes, gpu-workers, proxy, vpn, gateway, hypervisor]
