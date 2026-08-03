@@ -73,7 +73,12 @@ groups:
           description: "Filesystem {{ $labels.mountpoint }} on {{ $labels.device }} has been remounted read-only — usually a sign of disk/IO errors."
 
       - alert: HostHighMemory
-        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        # Hypervisors are excluded: on Proxmox most RAM is legitimately held by
+        # running guests and the ZFS ARC, neither of which counts as available,
+        # so this rule would fire permanently.
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes{role!="hypervisor"}
+            / node_memory_MemTotal_bytes{role!="hypervisor"})) * 100 > 85
         for: 10m
         labels:
           severity: warning
