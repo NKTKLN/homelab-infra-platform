@@ -6,7 +6,7 @@
   "timezone": "browser",
   "editable": true,
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "5m",
   "time": { "from": "now-24h", "to": "now" },
   "panels": [
@@ -14,7 +14,7 @@
       "id": 1,
       "type": "stat",
       "title": "Direct Download",
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         { "refId": "A", "expr": "speedtest_download_bits_per_second{path=\"direct\"}", "instant": true }
@@ -37,8 +37,57 @@
     {
       "id": 2,
       "type": "stat",
+      "title": "Direct Upload",
+      "gridPos": { "h": 5, "w": 4, "x": 4, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "speedtest_upload_bits_per_second{path=\"direct\"}", "instant": true }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps",
+          "color": { "mode": "fixed", "fixedColor": "#3987e5" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#3987e5", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background-solid",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Direct Ping",
+      "gridPos": { "h": 5, "w": 4, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "speedtest_ping_seconds{path=\"direct\"}", "instant": true }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 3,
+          "color": { "mode": "fixed", "fixedColor": "#3987e5" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#3987e5", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background-solid",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
       "title": "SOCKS Download",
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 },
+      "gridPos": { "h": 5, "w": 4, "x": 12, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         { "refId": "A", "expr": "speedtest_download_bits_per_second{path=\"socks\"}", "instant": true }
@@ -59,41 +108,59 @@
       }
     },
     {
-      "id": 3,
-      "type": "table",
-      "title": "Last Check Status",
-      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 0 },
+      "id": 5,
+      "type": "stat",
+      "title": "SOCKS Upload",
+      "gridPos": { "h": 5, "w": 4, "x": 16, "y": 0 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        { "refId": "A", "expr": "speedtest_success", "instant": true, "format": "table" }
-      ],
-      "transformations": [
-        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true } } }
+        { "refId": "A", "expr": "speedtest_upload_bits_per_second{path=\"socks\"}", "instant": true }
       ],
       "fieldConfig": {
         "defaults": {
-          "custom": { "cellOptions": { "type": "color-background" } },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "1": { "text": "OK", "color": "#0ca30c" },
-                "0": { "text": "FAIL", "color": "#d03b3b" }
-              }
-            }
-          ]
+          "unit": "bps",
+          "color": { "mode": "fixed", "fixedColor": "#199e70" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#199e70", "value": null }] }
         },
-        "overrides": [
-          { "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "Status" }] }
-        ]
+        "overrides": []
       },
-      "options": { "showHeader": true, "cellHeight": "md" }
+      "options": {
+        "colorMode": "background-solid",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
     },
     {
-      "id": 4,
+      "id": 6,
+      "type": "stat",
+      "title": "SOCKS Ping",
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "speedtest_ping_seconds{path=\"socks\"}", "instant": true }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 3,
+          "color": { "mode": "fixed", "fixedColor": "#199e70" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "#199e70", "value": null }] }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background-solid",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      }
+    },
+    {
+      "id": 7,
       "type": "timeseries",
       "title": "Download Speed",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         { "refId": "A", "expr": "speedtest_download_bits_per_second", "legendFormat": "{{path}}" }
@@ -124,13 +191,103 @@
       }
     },
     {
-      "id": 5,
+      "id": 8,
       "type": "timeseries",
-      "title": "Latency (TCP connect)",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "title": "Upload Speed",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
-        { "refId": "A", "expr": "speedtest_latency_seconds", "legendFormat": "{{path}}" }
+        { "refId": "A", "expr": "speedtest_upload_bits_per_second", "legendFormat": "{{path}}" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bps",
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "lineInterpolation": "smooth",
+            "fillOpacity": 15,
+            "gradientMode": "opacity",
+            "pointSize": 5,
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "direct" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#3987e5" } }] },
+          { "matcher": { "id": "byName", "options": "socks" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#199e70" } }] }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "lastNotNull"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Ping (mean, with best/worst sample)",
+      "description": "Time to first byte over HTTPS to the same endpoint on both paths, local DNS excluded. A SOCKS5 hop carries no ICMP, so this stands in for a ping.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "speedtest_ping_seconds", "legendFormat": "{{path}}" },
+        { "refId": "B", "expr": "speedtest_ping_min_seconds", "legendFormat": "{{path}} min" },
+        { "refId": "C", "expr": "speedtest_ping_max_seconds", "legendFormat": "{{path}} max" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "pointSize": 5,
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "direct" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#3987e5" } }] },
+          { "matcher": { "id": "byName", "options": "socks" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#199e70" } }] },
+          {
+            "matcher": { "id": "byRegexp", "options": "direct (min|max)" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#3987e5" } },
+              { "id": "custom.lineWidth", "value": 1 },
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [6, 6] } },
+              { "id": "custom.fillOpacity", "value": 0 }
+            ]
+          },
+          {
+            "matcher": { "id": "byRegexp", "options": "socks (min|max)" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "#199e70" } },
+              { "id": "custom.lineWidth", "value": 1 },
+              { "id": "custom.lineStyle", "value": { "fill": "dash", "dash": [6, 6] } },
+              { "id": "custom.fillOpacity", "value": 0 }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "lastNotNull"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Jitter",
+      "description": "Mean absolute difference between consecutive latency samples within a run.",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "speedtest_ping_jitter_seconds", "legendFormat": "{{path}}" }
       ],
       "fieldConfig": {
         "defaults": {
@@ -153,8 +310,71 @@
         ]
       },
       "options": {
-        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max", "lastNotNull"] },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": [] },
         "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 11,
+      "type": "table",
+      "title": "Last Check Status",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "speedtest_success", "instant": true, "format": "table" }
+      ],
+      "transformations": [
+        { "id": "organize", "options": { "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true } } }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "cellOptions": { "type": "color-background" } },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": { "text": "OK", "color": "#0ca30c" },
+                "0": { "text": "FAIL", "color": "#d03b3b" }
+              }
+            }
+          ]
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Value" }, "properties": [{ "id": "displayName", "value": "Status" }] }
+        ]
+      },
+      "options": { "showHeader": true, "cellHeight": "sm" }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Since Last Check",
+      "gridPos": { "h": 3, "w": 6, "x": 18, "y": 18 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "time() - speedtest_last_run_timestamp_seconds", "instant": true }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 0,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "#0ca30c", "value": null },
+              { "color": "#d03b3b", "value": 7200 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
       }
     }
   ]

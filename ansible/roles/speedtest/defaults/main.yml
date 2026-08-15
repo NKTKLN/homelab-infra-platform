@@ -1,6 +1,7 @@
 # Internet speed check (direct + via the AmneziaWG SOCKS5 proxy), run as a
-# systemd timer on the host. Results are written as a Prometheus textfile so
-# the already-running node_exporter picks them up on every scrape — no extra
+# systemd timer on the host. Every run measures download, upload and latency
+# for both paths. Results are written as a Prometheus textfile so the
+# already-running node_exporter picks them up on every scrape — no extra
 # exporter/container needed (see node_exporter_textfile_dir).
 speedtest_dir: /opt/speedtest
 speedtest_script_path: "{{ speedtest_dir }}/speedtest.sh"
@@ -16,26 +17,41 @@ speedtest_textfile_dir: /var/lib/node_exporter/textfile
 # this repo since the two roles run in different plays and don't share vars.
 speedtest_socks_proxy: "socks5h://192.168.1.20:1080"
 
-# Cloudflare's speed-test endpoint: no auth, anycast, fine over the SOCKS
-# path. Also used as the direct-path fallback if the Yandex probe below is
+# Cloudflare's speed-test endpoints: no auth, anycast, fine over the SOCKS
+# path. Also used as the direct-path fallback if the Yandex probes below are
 # unreachable.
 speedtest_download_url: "https://speed.cloudflare.com/__down?bytes={{ speedtest_download_bytes }}"
+speedtest_upload_url: "https://speed.cloudflare.com/__up"
 speedtest_download_bytes: 20971520 # 20MB
+speedtest_upload_bytes: 10485760 # 10MB — uplinks are usually the slower half
 
 # Cloudflare's anycast edge is throttled/unreliable on some ISPs' "clean"
-# (non-proxied) routes, so the direct-path test instead resolves a real test
+# (non-proxied) routes, so the direct-path tests instead resolve a real test
 # server from Yandex Internetometer's probe API — same approach as
 # https://github.com/Beta-Blaze/yandex-internetometer-cli, minus its
 # multi-threaded ramp-up (overkill for a periodic single-sample check).
-# The API is undocumented/internal, so a failed lookup falls back to Cloudflare.
+# The API is undocumented/internal, so a failed lookup — or a probe that
+# refuses the request — falls back to Cloudflare.
 speedtest_yandex_probes_url: "https://yandex.ru/internet/api/v0/get-probes"
 speedtest_yandex_user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
 # Picks the "50mb" download probe, matching the reference CLI's default.
+# The upload marker is empty: the API exposes far fewer upload probes, so the
+# first one it returns is taken as-is.
 speedtest_yandex_probe_marker: "50mb"
+speedtest_yandex_upload_probe_marker: ""
 
-# Abort a path's test after this long (seconds) — keeps a slow/broken proxy
-# from stalling the whole run. The Yandex probe file is ~50MB, so this also
-# doubles as the sample window for the direct-path measurement.
+# Latency ("ping") is measured over HTTPS against the same endpoint on both
+# paths, so direct and SOCKS numbers are comparable. A SOCKS5 hop carries no
+# ICMP, and curl's %{time_connect} through a proxy only times the LAN hop to
+# the proxy itself — so the sample is time-to-first-byte minus local DNS,
+# i.e. connect + TLS + request over the whole path.
+speedtest_ping_url: "https://speed.cloudflare.com/__down?bytes=0"
+speedtest_ping_samples: 5
+speedtest_ping_max_time: 10
+
+# Abort a path's transfer test after this long (seconds) — keeps a slow/broken
+# proxy from stalling the whole run. The Yandex probe file is ~50MB, so this
+# also doubles as the sample window for the direct-path measurement.
 speedtest_curl_max_time: 30
 
 # How often to run the check. Any systemd OnCalendar expression.

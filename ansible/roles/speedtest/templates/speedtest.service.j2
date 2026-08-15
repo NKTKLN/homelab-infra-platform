@@ -7,3 +7,6 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 ExecStart={{ speedtest_script_path }}
+# Four transfers plus the latency samples: comfortably past systemd's 90s
+# default, so give the run room instead of letting it be killed mid-test.
+TimeoutStartSec=600

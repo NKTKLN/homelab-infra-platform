@@ -5,90 +5,242 @@ set -uo pipefail
 TEXTFILE_DIR="{{ speedtest_textfile_dir }}"
 OUT_FILE="${TEXTFILE_DIR}/speedtest.prom"
 TMP_FILE="$(mktemp "${TEXTFILE_DIR}/.speedtest.XXXXXX")"
-trap 'rm -f "${TMP_FILE}"' EXIT
+WORK_DIR="$(mktemp -d)"
+trap 'rm -f "${TMP_FILE}"; rm -rf "${WORK_DIR}"' EXIT
 
-FALLBACK_URL="{{ speedtest_download_url }}"
+FALLBACK_DOWNLOAD_URL="{{ speedtest_download_url }}"
+FALLBACK_UPLOAD_URL="{{ speedtest_upload_url }}"
+UPLOAD_BYTES="{{ speedtest_upload_bytes }}"
 MAX_TIME="{{ speedtest_curl_max_time }}"
 SOCKS_PROXY="{{ speedtest_socks_proxy }}"
+
+PING_URL="{{ speedtest_ping_url }}"
+PING_SAMPLES="{{ speedtest_ping_samples }}"
+PING_MAX_TIME="{{ speedtest_ping_max_time }}"
 
 YANDEX_PROBES_URL="{{ speedtest_yandex_probes_url }}"
 YANDEX_USER_AGENT="{{ speedtest_yandex_user_agent }}"
 YANDEX_PROBE_MARKER="{{ speedtest_yandex_probe_marker }}"
+YANDEX_UPLOAD_PROBE_MARKER="{{ speedtest_yandex_upload_probe_marker }}"
 
-declare -A SUCCESS LATENCY DOWNLOAD_BPS
+PATHS=(direct socks)
+
+# One value per path, per metric. Missing/failed tests stay at 0 so the series
+# never disappears from the textfile — a gap in Prometheus would be read as
+# "node_exporter is down", not "this path is broken".
+declare -A OK_DOWNLOAD OK_UPLOAD OK_PING
+declare -A DOWNLOAD_BPS UPLOAD_BPS
+declare -A PING_AVG PING_MIN PING_MAX PING_JITTER PING_LOSS
+
+for path in "${PATHS[@]}"; do
+  OK_DOWNLOAD[$path]=0 OK_UPLOAD[$path]=0 OK_PING[$path]=0
+  DOWNLOAD_BPS[$path]=0 UPLOAD_BPS[$path]=0
+  PING_AVG[$path]=0 PING_MIN[$path]=0 PING_MAX[$path]=0
+  PING_JITTER[$path]=0 PING_LOSS[$path]=1
+done
+
+# curl args that select the path: nothing for direct, the proxy for socks.
+path_args() {
+  [[ "$1" == "socks" ]] && printf '%s\n%s\n' -x "${SOCKS_PROXY}"
+}
 
 # Cloudflare's anycast edge is throttled/unreliable on some ISPs' direct
-# route, so the direct-path test resolves a real nearby test server from
+# route, so the direct-path tests resolve a real nearby test server from
 # Yandex Internetometer's (undocumented) probe API instead — same source
 # https://github.com/Beta-Blaze/yandex-internetometer-cli uses. Falls back
 # to the Cloudflare URL if the lookup fails for any reason.
-resolve_yandex_download_url() {
-  local resp url
+# $1: probes key (download|upload), $2: substring the probe url must contain
+# (empty = take the first probe offered).
+resolve_yandex_url() {
+  local kind="$1" marker="$2" resp url
   resp=$(curl -s --max-time 5 \
     -H "User-Agent: ${YANDEX_USER_AGENT}" \
     -H "Referer: https://yandex.ru/internet/" \
     -H "Origin: https://yandex.ru" \
     "${YANDEX_PROBES_URL}?t=$(date +%s%3N)" 2>/dev/null) || return 1
 
-  url=$(printf '%s' "${resp}" | jq -r --arg marker "${YANDEX_PROBE_MARKER}" \
-    '(.download.probes // [] | map(select(.url | contains($marker))) | .[0].url)
-     // (.download.probes // [] | .[0].url)
-     // empty' 2>/dev/null)
+  url=$(printf '%s' "${resp}" | jq -r \
+    --arg kind "${kind}" --arg marker "${marker}" \
+    '(.[$kind].probes // []) as $p
+     | (if $marker == "" then empty
+        else ($p | map(select(.url | contains($marker))) | .[0].url) end)
+       // ($p | .[0].url)
+       // empty' 2>/dev/null)
 
   [[ -n "${url}" ]] || return 1
   printf '%s' "${url}"
 }
 
-run_test() {
-  local path="$1" url="$2"
-  shift 2
-  local curl_out rc=0
-  curl_out=$(curl -s -o /dev/null --max-time "${MAX_TIME}" \
-    -w '%{http_code} %{time_connect} %{speed_download} %{size_download}' \
-    "$@" "${url}" 2>/dev/null) || rc=$?
-
-  local http_code time_connect speed_download size_download
-  read -r http_code time_connect speed_download size_download <<<"${curl_out:-0 0 0 0}"
-
-  # --max-time is a sampling window here, not just an error condition: a
-  # slow path (e.g. a throttled direct route) legitimately won't finish the
-  # whole file, but curl still reports a valid partial speed_download for
-  # whatever it did transfer. Only a real failure (no 200, no bytes) counts
-  # as unsuccessful — rc 28 (timeout) with data is a normal, successful read.
-  SUCCESS[$path]=0
-  if [[ "${http_code}" == "200" && "${size_download:-0}" != "0" ]]; then
-    SUCCESS[$path]=1
-  fi
-  LATENCY[$path]="${time_connect:-0}"
-  DOWNLOAD_BPS[$path]=$(awk -v s="${speed_download:-0}" 'BEGIN { printf "%.0f", s * 8 }')
+# --max-time is a sampling window here, not just an error condition: a slow
+# path (e.g. a throttled direct route) legitimately won't finish the whole
+# file, but curl still reports a valid partial speed for whatever it did
+# transfer. So a run counts as successful whenever bytes actually moved and
+# curl either got its 200 or hit the timeout (rc 28) mid-transfer.
+transferred_ok() {
+  local http_code="$1" bytes="$2" rc="$3"
+  [[ "${bytes:-0}" != "0" ]] || return 1
+  [[ "${http_code}" == "200" || "${rc}" == "28" ]]
 }
 
-# Direct — the ops node's normal route to the internet.
-direct_url="$(resolve_yandex_download_url)"
-[[ -n "${direct_url}" ]] || direct_url="${FALLBACK_URL}"
-run_test direct "${direct_url}"
+# echoes "<ok> <bits_per_second>"
+measure_download() {
+  local url="$1"
+  shift
+  local out rc=0 http_code speed size
+  out=$(curl -s -o /dev/null --max-time "${MAX_TIME}" \
+    -w '%{http_code} %{speed_download} %{size_download}' \
+    "$@" "${url}" 2>/dev/null) || rc=$?
+  read -r http_code speed size <<<"${out:-0 0 0}"
 
-# Via the AmneziaWG SOCKS5 proxy (see amnezia_proxy role).
-run_test socks "${FALLBACK_URL}" -x "${SOCKS_PROXY}"
+  if transferred_ok "${http_code}" "${size}" "${rc}"; then
+    awk -v s="${speed:-0}" 'BEGIN { printf "1 %.0f", s * 8 }'
+  else
+    printf '0 0'
+  fi
+}
+
+# echoes "<ok> <bits_per_second>"
+measure_upload() {
+  local url="$1"
+  shift
+  local out rc=0 http_code speed size
+  # -H 'Expect:' drops curl's 100-continue handshake, which otherwise adds a
+  # round trip before the body starts and skews short samples.
+  out=$(curl -s -o /dev/null --max-time "${MAX_TIME}" \
+    -H 'Content-Type: application/octet-stream' \
+    -H 'Expect:' \
+    --data-binary "@${PAYLOAD_FILE}" \
+    -w '%{http_code} %{speed_upload} %{size_upload}' \
+    "$@" "${url}" 2>/dev/null) || rc=$?
+  read -r http_code speed size <<<"${out:-0 0 0}"
+
+  if transferred_ok "${http_code}" "${size}" "${rc}"; then
+    awk -v s="${speed:-0}" 'BEGIN { printf "1 %.0f", s * 8 }'
+  else
+    printf '0 0'
+  fi
+}
+
+# echoes "<ok> <avg> <min> <max> <jitter> <loss_ratio>", all seconds.
+# Each sample is a fresh connection: time-to-first-byte minus local DNS, so
+# the number is connect + TLS + request over the measured path. Jitter is the
+# mean absolute difference between consecutive samples (the usual definition),
+# not a standard deviation.
+measure_ping() {
+  # got is counted by hand rather than read off the array: this file is a
+  # Jinja template, and the brace-hash that opens an array-length expansion
+  # is also how a Jinja comment starts, so the render fails on it.
+  local samples=() got=0 i out http_code starttransfer namelookup sample
+  for ((i = 0; i < PING_SAMPLES; i++)); do
+    out=$(curl -s -o /dev/null --max-time "${PING_MAX_TIME}" \
+      -w '%{http_code} %{time_starttransfer} %{time_namelookup}' \
+      "$@" "${PING_URL}" 2>/dev/null) || continue
+    read -r http_code starttransfer namelookup <<<"${out:-0 0 0}"
+    [[ "${http_code}" == "200" ]] || continue
+    sample=$(awk -v t="${starttransfer:-0}" -v d="${namelookup:-0}" \
+      'BEGIN { v = t - d; if (v < 0) v = 0; printf "%.6f", v }')
+    samples+=("${sample}")
+    got=$((got + 1))
+  done
+
+  if ((got == 0)); then
+    printf '0 0 0 0 0 1'
+    return
+  fi
+
+  printf '%s\n' "${samples[@]}" | awk -v total="${PING_SAMPLES}" '
+    {
+      v[NR] = $1
+      sum += $1
+      if (NR == 1 || $1 < min) min = $1
+      if (NR == 1 || $1 > max) max = $1
+      if (NR > 1) { d = v[NR] - v[NR - 1]; if (d < 0) d = -d; jsum += d }
+    }
+    END {
+      jitter = (NR > 1) ? jsum / (NR - 1) : 0
+      printf "1 %.6f %.6f %.6f %.6f %.4f", sum / NR, min, max, jitter, (total - NR) / total
+    }'
+}
+
+# Same body for every upload, so runs stay comparable. Zeroes compress well,
+# but neither endpoint asks for gzip, so nothing is squeezed out in transit.
+PAYLOAD_FILE="${WORK_DIR}/payload.bin"
+head -c "${UPLOAD_BYTES}" /dev/zero >"${PAYLOAD_FILE}" 2>/dev/null
+
+# Direct path prefers a Yandex probe; the SOCKS path always uses Cloudflare.
+direct_download_url="$(resolve_yandex_url download "${YANDEX_PROBE_MARKER}")"
+[[ -n "${direct_download_url}" ]] || direct_download_url="${FALLBACK_DOWNLOAD_URL}"
+direct_upload_url="$(resolve_yandex_url upload "${YANDEX_UPLOAD_PROBE_MARKER}")"
+[[ -n "${direct_upload_url}" ]] || direct_upload_url="${FALLBACK_UPLOAD_URL}"
+
+for path in "${PATHS[@]}"; do
+  mapfile -t args < <(path_args "${path}")
+
+  download_url="${FALLBACK_DOWNLOAD_URL}"
+  upload_url="${FALLBACK_UPLOAD_URL}"
+  if [[ "${path}" == "direct" ]]; then
+    download_url="${direct_download_url}"
+    upload_url="${direct_upload_url}"
+  fi
+
+  read -r ok bps <<<"$(measure_download "${download_url}" "${args[@]}")"
+  # A resolved probe that turns out to be dead shouldn't cost us the sample.
+  if [[ "${ok}" == "0" && "${download_url}" != "${FALLBACK_DOWNLOAD_URL}" ]]; then
+    read -r ok bps <<<"$(measure_download "${FALLBACK_DOWNLOAD_URL}" "${args[@]}")"
+  fi
+  OK_DOWNLOAD[$path]="${ok}"
+  DOWNLOAD_BPS[$path]="${bps}"
+
+  read -r ok bps <<<"$(measure_upload "${upload_url}" "${args[@]}")"
+  if [[ "${ok}" == "0" && "${upload_url}" != "${FALLBACK_UPLOAD_URL}" ]]; then
+    read -r ok bps <<<"$(measure_upload "${FALLBACK_UPLOAD_URL}" "${args[@]}")"
+  fi
+  OK_UPLOAD[$path]="${ok}"
+  UPLOAD_BPS[$path]="${bps}"
+
+  read -r ok avg min max jitter loss <<<"$(measure_ping "${args[@]}")"
+  OK_PING[$path]="${ok}"
+  PING_AVG[$path]="${avg}"
+  PING_MIN[$path]="${min}"
+  PING_MAX[$path]="${max}"
+  PING_JITTER[$path]="${jitter}"
+  PING_LOSS[$path]="${loss}"
+done
+
+emit() {
+  local name="$1" help="$2" type="$3"
+  shift 3
+  local -n values="$1"
+  echo "# HELP ${name} ${help}"
+  echo "# TYPE ${name} ${type}"
+  for path in "${PATHS[@]}"; do
+    echo "${name}{path=\"${path}\"} ${values[$path]}"
+  done
+}
 
 {
-  echo "# HELP speedtest_success Whether the last speed check for this path succeeded (1) or failed (0)"
+  echo "# HELP speedtest_success Whether the last check of this path/test succeeded (1) or failed (0)"
   echo "# TYPE speedtest_success gauge"
-  for path in direct socks; do
-    echo "speedtest_success{path=\"${path}\"} ${SUCCESS[$path]}"
+  for path in "${PATHS[@]}"; do
+    echo "speedtest_success{path=\"${path}\",test=\"download\"} ${OK_DOWNLOAD[$path]}"
+    echo "speedtest_success{path=\"${path}\",test=\"upload\"} ${OK_UPLOAD[$path]}"
+    echo "speedtest_success{path=\"${path}\",test=\"ping\"} ${OK_PING[$path]}"
   done
 
-  echo "# HELP speedtest_latency_seconds Time to establish the TCP connection to the test endpoint"
-  echo "# TYPE speedtest_latency_seconds gauge"
-  for path in direct socks; do
-    echo "speedtest_latency_seconds{path=\"${path}\"} ${LATENCY[$path]}"
-  done
-
-  echo "# HELP speedtest_download_bits_per_second Average download speed observed during the test"
-  echo "# TYPE speedtest_download_bits_per_second gauge"
-  for path in direct socks; do
-    echo "speedtest_download_bits_per_second{path=\"${path}\"} ${DOWNLOAD_BPS[$path]}"
-  done
+  emit speedtest_download_bits_per_second \
+    "Average download speed observed during the test" gauge DOWNLOAD_BPS
+  emit speedtest_upload_bits_per_second \
+    "Average upload speed observed during the test" gauge UPLOAD_BPS
+  emit speedtest_ping_seconds \
+    "Mean latency over the path (time to first byte, local DNS excluded)" gauge PING_AVG
+  emit speedtest_ping_min_seconds \
+    "Best latency sample of the run" gauge PING_MIN
+  emit speedtest_ping_max_seconds \
+    "Worst latency sample of the run" gauge PING_MAX
+  emit speedtest_ping_jitter_seconds \
+    "Mean absolute difference between consecutive latency samples" gauge PING_JITTER
+  emit speedtest_ping_loss_ratio \
+    "Share of latency samples that got no answer (0-1)" gauge PING_LOSS
 
   echo "# HELP speedtest_last_run_timestamp_seconds Unix time the speed check last completed"
   echo "# TYPE speedtest_last_run_timestamp_seconds gauge"
@@ -97,4 +249,3 @@ run_test socks "${FALLBACK_URL}" -x "${SOCKS_PROXY}"
 
 mv "${TMP_FILE}" "${OUT_FILE}"
 chmod 0644 "${OUT_FILE}"
-trap - EXIT
